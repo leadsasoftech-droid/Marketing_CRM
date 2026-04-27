@@ -20,6 +20,50 @@ function getQueuedCount(result) {
         : 0;
 }
 
+function getPendingCount(result) {
+    if (!result) {
+        return 0;
+    }
+
+    if (typeof result.pendingCount === "number") {
+        return result.pendingCount;
+    }
+
+    return Array.isArray(result.resultsPreview)
+        ? result.resultsPreview.filter((entry) => entry.status === "pending").length
+        : 0;
+}
+
+function getPrimaryMetric(result) {
+    if (!result) {
+        return {
+            label: "Queued",
+            value: 0,
+        };
+    }
+
+    const pendingCount = getPendingCount(result);
+    if (pendingCount > 0) {
+        return {
+            label: "Awaiting Confirmation",
+            value: pendingCount,
+        };
+    }
+
+    const queuedCount = getQueuedCount(result);
+    if (queuedCount > 0) {
+        return {
+            label: "Queued",
+            value: queuedCount,
+        };
+    }
+
+    return {
+        label: "Sent",
+        value: Number(result.sentCount || 0),
+    };
+}
+
 export default function BulkMessagePage() {
     const { token } = useAuth();
     const fileInputRef = useRef(null);
@@ -27,7 +71,7 @@ export default function BulkMessagePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const submittingRef = useRef(false);
     const [result, setResult] = useState(null);
-    const queuedCount = getQueuedCount(result);
+    const primaryMetric = getPrimaryMetric(result);
 
     const sampleData = [
         { Name: "Rahul Sharma", Phone: "9876543210", "Country Code": "91" },
@@ -88,7 +132,7 @@ export default function BulkMessagePage() {
         try {
             const payload = await messageApi.sendBulk(formData, token);
             setResult(payload.data);
-            toast.success("Bulk campaign queued for delivery.");
+            toast.success(payload.message || "Bulk campaign submitted.");
         } catch (error) {
             toast.error(error.message || "Bulk campaign could not be started.");
         } finally {
@@ -232,8 +276,8 @@ export default function BulkMessagePage() {
                                     <p className="text-sm text-on-surface break-all mt-2">{result.batchId}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Queued</p>
-                                    <p className="text-2xl font-semibold text-on-surface mt-2">{queuedCount}</p>
+                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">{primaryMetric.label}</p>
+                                    <p className="text-2xl font-semibold text-on-surface mt-2">{primaryMetric.value}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Valid Rows</p>
@@ -268,6 +312,8 @@ export default function BulkMessagePage() {
                                                     <span
                                                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${entry.status === "sent"
                                                             ? "bg-secondary/10 text-secondary"
+                                                            : entry.status === "pending"
+                                                                ? "bg-amber-100 text-amber-800"
                                                             : entry.status === "queued"
                                                                 ? "bg-primary/10 text-primary"
                                                             : "bg-error-container text-error"

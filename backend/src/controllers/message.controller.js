@@ -5,6 +5,11 @@ const MessageHistory = require("../models/messageHistory.model");
 const { parseContactsFile } = require("../services/bulkUpload.service");
 const { enqueueMessage, getWhatsappQueue } = require("../queues/whatsapp.queue");
 const { sendTextMessage } = require("../services/whatsapp.service");
+const {
+  applyAcceptedDeliveryToHistory,
+  applyWebhookStatusToHistory,
+  getDeliverySuccessMessage,
+} = require("../utils/messageDeliveryState");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/apiError");
 
@@ -12,20 +17,37 @@ function isDirectDispatchMode() {
   return env.messageDispatchMode === "direct";
 }
 
+function buildDirectBulkResponseMessage({ sentCount, pendingCount, failedCount }) {
+  const parts = [];
+
+  if (sentCount > 0) {
+    parts.push(`${sentCount} sent`);
+  }
+
+  if (pendingCount > 0) {
+    parts.push(`${pendingCount} accepted by provider`);
+  }
+
+  if (failedCount > 0 || parts.length === 0) {
+    parts.push(`${failedCount} failed`);
+  }
+
+  if (parts.length === 1) {
+    return `${parts[0]} during this upload.`;
+  }
+
+  if (parts.length === 2) {
+    return `${parts[0]} and ${parts[1]} during this upload.`;
+  }
+
+  return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)} during this upload.`;
+}
+
 async function deliverMessageImmediately({ history, to, message }) {
   try {
     const delivery = await sendTextMessage({ to, message });
 
-    history.status = "sent";
-    history.metaMessageId = delivery.messageId;
-    history.metaResponse = delivery.raw;
-    history.errorMessage = "";
-    history.sentAt = new Date();
-
-    if (delivery.templateName && !message) {
-      history.message = `[Template: ${delivery.templateName}]`;
-    }
-
+    applyAcceptedDeliveryToHistory({ history, delivery, message });
     await history.save();
 
     return {
@@ -70,7 +92,7 @@ const sendSingleMessage = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Message sent successfully.",
+      message: getDeliverySuccessMessage(result.delivery),
       data: result,
     });
     return;
@@ -120,6 +142,7 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
   }
 
   const results = [];
+  let pendingCount = 0;
   let sentCount = 0;
   let failedCount = 0;
 
@@ -142,7 +165,12 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
           message: messageText || undefined,
         });
 
-        sentCount += 1;
+        if (deliveredHistory.status === "sent") {
+          sentCount += 1;
+        } else if (deliveredHistory.status === "pending") {
+          pendingCount += 1;
+        }
+
         results.push({
           rowNumber: recipient.rowNumber,
           recipientName: recipient.name,
@@ -185,7 +213,7 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
   res.status(202).json({
     success: true,
     message: isDirectDispatchMode()
-      ? `${sentCount} messages sent and ${failedCount} failed during this upload.`
+      ? buildDirectBulkResponseMessage({ sentCount, pendingCount, failedCount })
       : `${results.length} messages queued for delivery. Check sent history for status updates.`,
     data: {
       batchId,
@@ -194,6 +222,7 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
       invalidRows: parsedFile.invalidRows,
       duplicateRows: parsedFile.duplicateRows,
       queuedCount: isDirectDispatchMode() ? 0 : results.length,
+      pendingCount,
       sentCount,
       failedCount,
       resultsPreview: results.slice(0, 50),
@@ -394,20 +423,9 @@ const handleDeliveryWebhook = asyncHandler(async (req, res) => {
                 // Find the history entry by metaMessageId
                 const history = await MessageHistory.findOne({ metaMessageId: messageId });
                 if (history) {
-                  // Only update to failed if the webhook says it failed.
-                  // We don't overwrite queued. We can update sent to delivered or failed.
-                  if (messageStatus === "failed") {
-                    history.status = "failed";
-                    history.errorMessage = "Delivery failed through Meta API. Message rejected or undeliverable.";
-                    if (status.errors) {
-                      history.metaResponse = status;
-                    }
-                  } else if (messageStatus === "delivered" && history.status === "sent") {
-                    // Update from 'sent' to 'delivered' if we have such a status, or just keep 'sent'.
-                    // For now, if we want to stick to the 'sent' state, we do nothing. Un-comment if you use 'delivered' status.
-                    // history.status = "delivered";
+                  if (applyWebhookStatusToHistory({ history, status })) {
+                    await history.save();
                   }
-                  await history.save();
                 }
               }
             }

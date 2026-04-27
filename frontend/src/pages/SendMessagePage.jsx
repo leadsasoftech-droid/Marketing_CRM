@@ -15,7 +15,8 @@ const countryOptions = [
 function buildResultSummary(result) {
     const history = result?.history || null;
     const delivery = result?.delivery || null;
-    const status = history?.status || (delivery ? "sent" : "queued");
+    const status =
+        history?.status || (delivery?.mode === "mock" ? "sent" : delivery ? "pending" : "queued");
 
     return {
         delivery,
@@ -24,8 +25,10 @@ function buildResultSummary(result) {
         messageId: delivery?.messageId || history?.metaMessageId || null,
         provider: delivery?.provider || null,
         mode: delivery?.mode || null,
+        warning: delivery?.warning || "",
         status,
-        isQueued: !delivery,
+        isQueued: status === "queued",
+        isAwaitingConfirmation: status === "pending",
     };
 }
 
@@ -74,7 +77,7 @@ export default function SendMessagePage() {
                 name: "",
                 phoneNumber: "",
             }));
-            toast.success("Message queued for delivery");
+            toast.success(payload.message || "Message submitted.");
         } catch (error) {
             toast.error(error.message || "Message could not be sent.");
         } finally {
@@ -197,16 +200,32 @@ export default function SendMessagePage() {
                         <div className="space-y-4">
                             <div className={`rounded-xl px-4 py-3 border ${resultSummary.isQueued
                                 ? "bg-primary/10 border-primary/20"
-                                : "bg-secondary/10 border-secondary/20"
+                                : resultSummary.isAwaitingConfirmation
+                                    ? "bg-amber-100 border-amber-200"
+                                    : "bg-secondary/10 border-secondary/20"
                                 }`}>
-                                <p className={`text-sm font-semibold ${resultSummary.isQueued ? "text-primary" : "text-secondary"}`}>
-                                    {resultSummary.isQueued ? "Message queued" : "Message accepted"}
+                                <p className={`text-sm font-semibold ${resultSummary.isQueued
+                                    ? "text-primary"
+                                    : resultSummary.isAwaitingConfirmation
+                                        ? "text-amber-800"
+                                        : "text-secondary"
+                                    }`}>
+                                    {resultSummary.isQueued
+                                        ? "Message queued"
+                                        : resultSummary.isAwaitingConfirmation
+                                            ? "Awaiting delivery confirmation"
+                                            : "Message sent"}
                                 </p>
                                 <p className="text-xs text-on-surface-variant mt-1">
                                     {resultSummary.isQueued
                                         ? "The background worker will process this delivery shortly. Track progress in Sent History."
-                                        : `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode}`}
+                                        : resultSummary.isAwaitingConfirmation
+                                            ? `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode} • Final status will update from the provider webhook.`
+                                            : `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode}`}
                                 </p>
+                                {resultSummary.warning ? (
+                                    <p className="text-xs text-amber-800 mt-2">{resultSummary.warning}</p>
+                                ) : null}
                             </div>
                             <div className="space-y-3 text-sm">
                                 <div>

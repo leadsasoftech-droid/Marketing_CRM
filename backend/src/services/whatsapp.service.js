@@ -79,6 +79,27 @@ function buildTextBody(to, message) {
   };
 }
 
+function normalizeProviderMessage(message) {
+  if (Array.isArray(message)) {
+    return message.filter(Boolean).join(" ");
+  }
+
+  return typeof message === "string" ? message : "";
+}
+
+function extractProviderMessageId(payload) {
+  return payload?.messages?.[0]?.id || payload?.data?.message_id || payload?.message_id || null;
+}
+
+function extractProviderMessageStatus(payload) {
+  return (
+    payload?.messages?.[0]?.message_status ||
+    payload?.data?.message_status ||
+    payload?.message_status ||
+    null
+  );
+}
+
 /**
  * Send a WhatsApp message via Fast2SMS using the official Meta Cloud API format.
  *
@@ -127,26 +148,39 @@ async function sendViaFast2Sms({ to, message }) {
     });
 
     const payload = await response.json().catch(() => ({}));
+    const providerMessageStatus = extractProviderMessageStatus(payload);
+    const explicitFailure =
+      Boolean(payload?.error) ||
+      payload?.success === false ||
+      payload?.return === false ||
+      payload?.status === false ||
+      Number(payload?.status_code) >= 400 ||
+      providerMessageStatus === "failed";
 
     // Fast2SMS may return HTTP 200 even on failure — the error lives
     // inside the JSON body. Check BOTH the HTTP status and payload.error.
-    if (!response.ok || payload.error) {
+    if (!response.ok || explicitFailure) {
       const error = new ApiError(
         response.ok ? 502 : response.status,
-        payload?.error?.message || payload?.message || "Fast2SMS WhatsApp API request failed.",
+        payload?.error?.message ||
+          payload?.errors?.[0]?.message ||
+          normalizeProviderMessage(payload?.message) ||
+          "Fast2SMS WhatsApp API request failed.",
       );
       error.metaResponse = payload;
       throw error;
     }
 
+    const providerMessageId = extractProviderMessageId(payload);
+
     return {
       provider: "fast2sms",
       mode: "live",
-      messageId:
-        payload?.messages?.[0]?.id ||
-        payload?.data?.message_id ||
-        payload?.message_id ||
-        crypto.randomUUID(),
+      messageId: providerMessageId,
+      providerStatus: providerMessageStatus,
+      warning: providerMessageId
+        ? ""
+        : "Provider accepted the request but did not return a trackable message ID.",
       to,
       templateName: useTemplate ? env.fast2smsDefaultTemplate : null,
       raw: payload,

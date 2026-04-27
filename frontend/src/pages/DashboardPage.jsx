@@ -42,6 +42,7 @@ export default function DashboardPage() {
         sent: 0,
         failed: 0,
         queued: 0,
+        pending: 0,
         recent: [],
     });
     const [filterSelect, setFilterSelect] = useState('Last 1 week');
@@ -50,12 +51,13 @@ export default function DashboardPage() {
         let isCancelled = false;
         async function loadDashboard() {
             try {
-                const [totalResponse, sentResponse, failedResponse, queuedResponse, recentResponse] =
+                const [totalResponse, sentResponse, failedResponse, queuedResponse, pendingResponse, recentResponse] =
                     await Promise.all([
                         messageApi.getHistory({ page: 1, limit: 1 }, token),
                         messageApi.getHistory({ page: 1, limit: 1, status: "sent" }, token),
                         messageApi.getHistory({ page: 1, limit: 1, status: "failed" }, token),
                         messageApi.getHistory({ page: 1, limit: 1, status: "queued" }, token),
+                        messageApi.getHistory({ page: 1, limit: 1, status: "pending" }, token),
                         messageApi.getHistory({ page: 1, limit: 100 }, token),
                     ]);
 
@@ -65,6 +67,7 @@ export default function DashboardPage() {
                         sent: sentResponse.data.pagination.total,
                         failed: failedResponse.data.pagination.total,
                         queued: queuedResponse.data.pagination.total,
+                        pending: pendingResponse.data.pagination.total,
                         recent: recentResponse.data.history,
                     });
                 }
@@ -279,6 +282,14 @@ export default function DashboardPage() {
                             </p>
                             <p className="text-[24px] font-semibold text-on-surface mt-2">
                                 {overview.queued}
+                            </p>
+                        </div>
+                        <div className="rounded-xl border border-outline-variant bg-surface p-4">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
+                                Awaiting Confirmation
+                            </p>
+                            <p className="text-[24px] font-semibold text-on-surface mt-2">
+                                {overview.pending}
                             </p>
                         </div>
                         <div className="rounded-xl border border-outline-variant bg-surface p-4">

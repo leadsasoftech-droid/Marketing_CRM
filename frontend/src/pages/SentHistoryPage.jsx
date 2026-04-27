@@ -42,6 +42,10 @@ function getStatusStyles(status) {
         return "bg-amber-100 text-amber-700";
     }
 
+    if (status === "pending") {
+        return "bg-primary/10 text-primary";
+    }
+
     return "bg-primary/10 text-primary";
 }
 

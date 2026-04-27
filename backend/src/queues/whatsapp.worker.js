@@ -5,6 +5,7 @@ const { redisOptions } = require("../config/redis");
 const { QUEUE_NAME } = require("../queues/whatsapp.queue");
 const { sendTextMessage } = require("../services/whatsapp.service");
 const MessageHistory = require("../models/messageHistory.model");
+const { applyAcceptedDeliveryToHistory } = require("../utils/messageDeliveryState");
 
 // -------------------------------------------------------------------------
 // Status codes that should NOT be retried (permanent failures).
@@ -67,25 +68,17 @@ async function processJob(job) {
         return { skipped: true, reason: "History record not found" };
     }
 
-    if (history.status === "sent") {
-        // Already sent (perhaps by a previous attempt that succeeded but
-        // the job-completion ack was lost). Do NOT send again.
-        return { skipped: true, reason: "Already sent" };
+    if (["pending", "sent"].includes(history.status)) {
+        // Already accepted by the provider (or fully confirmed in mock mode).
+        // Do NOT send again if BullMQ replays the job.
+        return { skipped: true, reason: "Already accepted by provider" };
     }
 
     try {
         const delivery = await sendTextMessage({ to, message });
 
         // ---- Success ----
-        history.status = "sent";
-        history.metaMessageId = delivery.messageId;
-        history.metaResponse = delivery.raw;
-        history.sentAt = new Date();
-
-        if (delivery.templateName && !message) {
-            history.message = `[Template: ${delivery.templateName}]`;
-        }
-
+        applyAcceptedDeliveryToHistory({ history, delivery, message });
         await history.save();
 
         return {
@@ -152,7 +145,7 @@ function startWhatsappWorker() {
         if (job && job.attemptsMade >= job.opts.attempts) {
             try {
                 const history = await MessageHistory.findById(job.data.historyId);
-                if (history && history.status !== "sent") {
+                if (history && !["pending", "sent"].includes(history.status)) {
                     history.status = "failed";
                     history.errorMessage = error.message;
                     await history.save();

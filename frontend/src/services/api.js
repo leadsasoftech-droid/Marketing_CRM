@@ -120,6 +120,12 @@ export const messageApi = {
       token,
     });
   },
+  clearQueued(token) {
+    return request("/api/messages/queued", {
+      method: "DELETE",
+      token,
+    });
+  },
   getHistory(params, token) {
     return request(`/api/messages/history${toQueryString(params)}`, { token });
   },

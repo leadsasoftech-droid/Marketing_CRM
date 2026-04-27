@@ -55,12 +55,25 @@ export default function SentHistoryPage() {
     const [history, setHistory] = useState([]);
     const [totalRecords, setTotalRecords] = useState(0);
     const [nextCursor, setNextCursor] = useState(null);
+    const [queuedTotal, setQueuedTotal] = useState(0);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const [isClearingQueued, setIsClearingQueued] = useState(false);
     const hasNextPage = nextCursor !== null;
 
     const parentRef = useRef(null);
+
+    const refreshQueuedTotal = useCallback(async () => {
+        if (!token) return;
+
+        try {
+            const payload = await messageApi.getHistory({ limit: 1, status: "queued" }, token);
+            setQueuedTotal(payload.data.pagination.total);
+        } catch (error) {
+            toast.error(error.message || "Unable to load queued message count.");
+        }
+    }, [token]);
 
     const fetchHistory = useCallback(async (cursor = null, isRefresh = false) => {
         if (!token) return;
@@ -92,6 +105,10 @@ export default function SentHistoryPage() {
     useEffect(() => {
         fetchHistory(null, true);
     }, [fetchHistory]);
+
+    useEffect(() => {
+        refreshQueuedTotal();
+    }, [refreshQueuedTotal]);
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const rowVirtualizer = useVirtualizer({
@@ -127,6 +144,34 @@ export default function SentHistoryPage() {
 
     const sentCount = history.filter((item) => item.status === "sent").length;
     const failedCount = history.filter((item) => item.status === "failed").length;
+
+    const handleClearQueued = async () => {
+        if (!queuedTotal || isClearingQueued) {
+            return;
+        }
+
+        const shouldClear = window.confirm(
+            `Clear ${queuedTotal} queued message${queuedTotal === 1 ? "" : "s"}? They will be marked as failed before delivery.`,
+        );
+
+        if (!shouldClear) {
+            return;
+        }
+
+        try {
+            setIsClearingQueued(true);
+            const payload = await messageApi.clearQueued(token);
+            toast.success(payload.message || "Queued messages cleared.");
+            await Promise.all([
+                fetchHistory(null, true),
+                refreshQueuedTotal(),
+            ]);
+        } catch (error) {
+            toast.error(error.message || "Unable to clear queued messages.");
+        } finally {
+            setIsClearingQueued(false);
+        }
+    };
 
     return (
         <motion.div
@@ -176,6 +221,15 @@ export default function SentHistoryPage() {
                             filter_list
                         </span>
                     </div>
+                    <button
+                        type="button"
+                        onClick={handleClearQueued}
+                        disabled={!queuedTotal || isClearingQueued}
+                        className="inline-flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">playlist_remove</span>
+                        {isClearingQueued ? "Clearing..." : `Clear Queued${queuedTotal ? ` (${queuedTotal})` : ""}`}
+                    </button>
                 </div>
             </div>
 

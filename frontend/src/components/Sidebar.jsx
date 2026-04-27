@@ -60,7 +60,6 @@ export default function Sidebar({ isOpen, onClose }) {
                         <NavLink
                             key={item.path}
                             to={item.path}
-                            onClick={onClose}
                             className={({ isActive }) =>
                                 isActive
                                     ? 'bg-blue-600/10 text-white border-l-4 border-blue-600 py-3 px-6 flex items-center gap-3 transition-all duration-200'

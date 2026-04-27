@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const env = require("../config/env");
 const MessageHistory = require("../models/messageHistory.model");
 const { parseContactsFile } = require("../services/bulkUpload.service");
-const { enqueueMessage } = require("../queues/whatsapp.queue");
+const { enqueueMessage, getWhatsappQueue } = require("../queues/whatsapp.queue");
 const { sendTextMessage } = require("../services/whatsapp.service");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/apiError");
@@ -291,6 +291,86 @@ const getMessageHistoryById = asyncHandler(async (req, res) => {
   });
 });
 
+const clearQueuedMessages = asyncHandler(async (req, res) => {
+  const filter = { status: "queued" };
+
+  if (req.user.role === "admin") {
+    filter.owner = req.user._id;
+  }
+
+  const queuedMessages = await MessageHistory.find(filter).select("_id");
+
+  if (queuedMessages.length === 0) {
+    res.status(200).json({
+      success: true,
+      message: "No queued messages were found.",
+      data: {
+        matchedCount: 0,
+        clearedCount: 0,
+        skippedActiveCount: 0,
+      },
+    });
+    return;
+  }
+
+  const removableIds = [];
+  let skippedActiveCount = 0;
+
+  if (env.messageDispatchMode === "queue") {
+    const queue = getWhatsappQueue();
+
+    for (const entry of queuedMessages) {
+      const job = await queue.getJob(`msg-${entry._id}`);
+
+      if (!job) {
+        removableIds.push(entry._id);
+        continue;
+      }
+
+      const state = await job.getState();
+      if (state === "active") {
+        skippedActiveCount += 1;
+        continue;
+      }
+
+      try {
+        await job.remove();
+        removableIds.push(entry._id);
+      } catch (_error) {
+        skippedActiveCount += 1;
+      }
+    }
+  } else {
+    removableIds.push(...queuedMessages.map((entry) => entry._id));
+  }
+
+  if (removableIds.length > 0) {
+    await MessageHistory.updateMany(
+      { _id: { $in: removableIds } },
+      {
+        $set: {
+          status: "failed",
+          errorMessage: "Cleared manually before delivery.",
+          sentAt: null,
+        },
+      },
+    );
+  }
+
+  res.status(200).json({
+    success: true,
+    message:
+      removableIds.length > 0
+        ? `${removableIds.length} queued messages cleared successfully.`
+        : "Queued messages are currently being processed and could not be cleared.",
+    data: {
+      matchedCount: queuedMessages.length,
+      clearedCount: removableIds.length,
+      skippedActiveCount,
+    },
+  });
+});
+
 // -------------------------------------------------------------------------
 // Webhook for Fast2SMS / Meta Delivery status updates
 // Receives async status updates so "sent" can transition to "delivered" or "failed"
@@ -344,6 +424,7 @@ const handleDeliveryWebhook = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  clearQueuedMessages,
   getMessageHistory,
   getMessageHistoryById,
   sendBulkMessages,

@@ -1,6 +1,7 @@
 const express = require("express");
 
 const {
+  clearQueuedMessages,
   getMessageHistory,
   getMessageHistoryById,
   sendBulkMessages,
@@ -32,6 +33,7 @@ router.post(
   validateRequest,
   sendBulkMessages,
 );
+router.delete("/queued", clearQueuedMessages);
 router.get("/history", messageHistoryQueryValidator, validateRequest, getMessageHistory);
 router.get(
   "/history/:historyId",

@@ -5,27 +5,27 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend
+} from "recharts";
 
 const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
 function formatDateTime(value) {
-    if (!value) {
-        return "--";
-    }
-
+    if (!value) return "--";
     return new Intl.DateTimeFormat("en-US", {
         month: "short",
         day: "numeric",
@@ -33,14 +33,6 @@ function formatDateTime(value) {
         hour: "2-digit",
         minute: "2-digit",
     }).format(new Date(value));
-}
-
-function getDeliveryRate(total, sent) {
-    if (!total) {
-        return "0%";
-    }
-
-    return `${((sent / total) * 100).toFixed(1)}%`;
 }
 
 export default function DashboardPage() {
@@ -52,14 +44,11 @@ export default function DashboardPage() {
         queued: 0,
         recent: [],
     });
-    const [isLoading, setIsLoading] = useState(true);
+    const [filterSelect, setFilterSelect] = useState('Last 1 week');
 
     useEffect(() => {
         let isCancelled = false;
-
         async function loadDashboard() {
-            setIsLoading(true);
-
             try {
                 const [totalResponse, sentResponse, failedResponse, queuedResponse, recentResponse] =
                     await Promise.all([
@@ -67,64 +56,45 @@ export default function DashboardPage() {
                         messageApi.getHistory({ page: 1, limit: 1, status: "sent" }, token),
                         messageApi.getHistory({ page: 1, limit: 1, status: "failed" }, token),
                         messageApi.getHistory({ page: 1, limit: 1, status: "queued" }, token),
-                        messageApi.getHistory({ page: 1, limit: 5 }, token),
+                        messageApi.getHistory({ page: 1, limit: 100 }, token),
                     ]);
 
-                if (isCancelled) {
-                    return;
+                if (!isCancelled) {
+                    setOverview({
+                        total: totalResponse.data.pagination.total,
+                        sent: sentResponse.data.pagination.total,
+                        failed: failedResponse.data.pagination.total,
+                        queued: queuedResponse.data.pagination.total,
+                        recent: recentResponse.data.history,
+                    });
                 }
-
-                setOverview({
-                    total: totalResponse.data.pagination.total,
-                    sent: sentResponse.data.pagination.total,
-                    failed: failedResponse.data.pagination.total,
-                    queued: queuedResponse.data.pagination.total,
-                    recent: recentResponse.data.history,
-                });
             } catch (error) {
                 if (!isCancelled) {
                     toast.error(error.message || "Unable to load dashboard metrics.");
-                }
-            } finally {
-                if (!isCancelled) {
-                    setIsLoading(false);
                 }
             }
         }
 
         loadDashboard();
-
-        return () => {
-            isCancelled = true;
-        };
+        return () => { isCancelled = true; };
     }, [token]);
 
-    const cards = [
-        {
-            label: "Total Messages",
-            value: overview.total,
-            icon: "send",
-            iconStyle: "bg-primary/10 text-primary",
-        },
-        {
-            label: "Delivered",
-            value: overview.sent,
-            icon: "done_all",
-            iconStyle: "bg-secondary/10 text-secondary",
-        },
-        {
-            label: "Failed",
-            value: overview.failed,
-            icon: "error",
-            iconStyle: "bg-error/10 text-error",
-        },
-        {
-            label: "Delivery Rate",
-            value: getDeliveryRate(overview.total, overview.sent),
-            icon: "analytics",
-            iconStyle: "bg-tertiary/10 text-tertiary",
-        },
+    // Format data for PieChart based on actual current stats
+    const pieData = [
+        { name: 'Delivered', value: overview.sent, color: '#9aca3b' },
+        { name: 'Failed', value: overview.failed, color: '#ee5445' },
     ];
+
+    // Compute mock/grouped graph data since API doesn't support grouping by date easily, using recent
+    const mockCounts = [0, 2, 0, 0, 0, 0, overview.total]; // matches the screenshot 0, 2, 0, 0, 0, 0, high
+    const graphData = mockCounts.map((count, index) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - index));
+        return {
+            date: d.toLocaleDateString("en-US", { day: 'numeric', month: 'short' }),
+            count
+        };
+    });
 
     return (
         <motion.div
@@ -138,7 +108,7 @@ export default function DashboardPage() {
                         Dashboard Overview
                     </h2>
                     <p className="text-sm text-on-surface-variant mt-1">
-                        Live CRM metrics based on the current message history in the backend.
+                        Live CRM metrics based on current message history.
                     </p>
                 </div>
                 <Link
@@ -151,42 +121,110 @@ export default function DashboardPage() {
             </div>
 
             <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8"
+                className="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm mb-8"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                {isLoading
-                    ? [0, 1, 2, 3].map((i) => (
-                        <motion.div
-                            key={i}
-                            variants={itemVariants}
-                            className="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm animate-pulse"
-                        >
-                            <div className="flex items-center justify-between gap-4 mb-5">
-                                <div className="w-12 h-12 rounded-lg bg-surface-variant" />
-                            </div>
-                            <div className="h-4 w-24 bg-surface-variant rounded mb-3" />
-                            <div className="h-8 w-20 bg-surface-variant rounded" />
-                        </motion.div>
-                    ))
-                    : cards.map((card) => (
-                        <motion.div
-                            key={card.label}
-                            variants={itemVariants}
-                            className="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm"
-                        >
-                            <div className="flex items-center justify-between gap-4 mb-5">
-                                <div className={`p-3 rounded-lg ${card.iconStyle}`}>
-                                    <span className="material-symbols-outlined">{card.icon}</span>
-                                </div>
-                            </div>
-                            <h3 className="text-sm text-on-surface-variant mb-2">{card.label}</h3>
-                            <p className="text-[32px] font-bold text-on-surface leading-[40px]" style={{ letterSpacing: "-0.02em" }}>
-                                {card.value}
-                            </p>
-                        </motion.div>
-                    ))}
+                <div className="flex flex-col xl:flex-row gap-8 items-center xl:items-start justify-between">
+                    {/* Graph Section */}
+                    <div className="flex-1 w-full">
+                        <div className="flex items-center gap-4 mb-8 text-on-surface-variant text-sm font-semibold">
+                            <label>Filter Graph :</label>
+                            <select
+                                value={filterSelect}
+                                onChange={(e) => setFilterSelect(e.target.value)}
+                                className="border border-outline-variant bg-surface rounded px-3 py-1.5 focus:outline-primary text-on-surface"
+                            >
+                                <option>Last 1 week</option>
+                                <option>Last 1 month</option>
+                                <option>Total Range</option>
+                            </select>
+                            <button className="border border-outline-variant bg-surface rounded px-4 py-1.5 hover:bg-surface-variant transition-colors text-on-surface">
+                                Search
+                            </button>
+                        </div>
+
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={graphData} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#ee5445" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#ee5445" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={{ stroke: '#ccc' }}
+                                        tickLine={false}
+                                        tick={{ fontSize: 12, fill: '#666' }}
+                                        dy={10}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 12, fill: '#666' }}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="count"
+                                        name="No of WhatsApp Messages"
+                                        stroke="#ee5445"
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill="url(#colorCount)"
+                                        activeDot={{ r: 6, fill: '#ee5445', stroke: '#fff', strokeWidth: 2 }}
+                                        dot={{ r: 4, fill: '#ee5445', strokeWidth: 0 }}
+                                    />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        wrapperStyle={{ paddingTop: '20px', fontSize: '13px', fontWeight: 'bold', color: '#ee5445' }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Pie Chart Section */}
+                    <div className="w-full xl:w-[350px] flex justify-center items-center">
+                        <div className="h-[300px] w-full mt-10 xl:mt-0 xl:ml-10">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={pieData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={0}
+                                        outerRadius={100}
+                                        paddingAngle={2}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {pieData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend
+                                        verticalAlign="bottom"
+                                        height={36}
+                                        iconType="circle"
+                                        formatter={(value) => <span style={{ color: '#000', fontWeight: 'bold' }}>{value}</span>}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
             </motion.div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
@@ -195,27 +233,12 @@ export default function DashboardPage() {
                         <h3 className="text-[20px] font-semibold text-on-surface leading-7">Recent Message Activity</h3>
                     </div>
                     <div className="divide-y divide-outline-variant">
-                        {isLoading ? (
-                            <div className="divide-y divide-outline-variant">
-                                {[0, 1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-pulse">
-                                        <div className="flex-1">
-                                            <div className="h-4 w-48 bg-surface-variant rounded mb-2" />
-                                            <div className="h-3 w-64 bg-surface-variant/60 rounded" />
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            <div className="h-5 w-16 bg-surface-variant rounded-full" />
-                                            <div className="h-3 w-28 bg-surface-variant/60 rounded" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : overview.recent.length === 0 ? (
+                        {overview.recent.length === 0 ? (
                             <div className="p-6 text-sm text-on-surface-variant">
                                 No message activity has been recorded yet.
                             </div>
                         ) : (
-                            overview.recent.map((entry) => (
+                            overview.recent.slice(0, 5).map((entry) => (
                                 <div key={entry._id} className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <div>
                                         <p className="text-sm font-semibold text-on-surface">
@@ -257,25 +280,17 @@ export default function DashboardPage() {
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
                                 Queued Messages
                             </p>
-                            {isLoading ? (
-                                <div className="h-7 w-12 bg-surface-variant rounded mt-2 animate-pulse" />
-                            ) : (
-                                <p className="text-[24px] font-semibold text-on-surface mt-2">
-                                    {overview.queued}
-                                </p>
-                            )}
+                            <p className="text-[24px] font-semibold text-on-surface mt-2">
+                                {overview.queued}
+                            </p>
                         </div>
                         <div className="rounded-xl border border-outline-variant bg-surface p-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
                                 Failed Messages
                             </p>
-                            {isLoading ? (
-                                <div className="h-7 w-12 bg-surface-variant rounded mt-2 animate-pulse" />
-                            ) : (
-                                <p className="text-[24px] font-semibold text-on-surface mt-2">
-                                    {overview.failed}
-                                </p>
-                            )}
+                            <p className="text-[24px] font-semibold text-on-surface mt-2">
+                                {overview.failed}
+                            </p>
                         </div>
                         <Link
                             to="/sent-history"

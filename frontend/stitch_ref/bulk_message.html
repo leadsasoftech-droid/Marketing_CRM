@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bulk Message Campaign - MarketingCRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f8",
+                        "primary-fixed": "#dbe1ff",
+                        "surface": "#f7f9fd",
+                        "on-tertiary-fixed": "#001b3d",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f5",
+                        "secondary-fixed-dim": "#3de273",
+                        "on-secondary-fixed-variant": "#005322",
+                        "on-surface": "#191c1f",
+                        "on-tertiary-fixed-variant": "#244778",
+                        "surface-container": "#eceef2",
+                        "on-background": "#191c1f",
+                        "secondary-fixed": "#66ff8e",
+                        "surface-container-highest": "#e0e2e6",
+                        "surface-variant": "#e0e2e6",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f3f3ff",
+                        "secondary": "#006d2f",
+                        "on-primary-fixed-variant": "#003da9",
+                        "inverse-primary": "#b4c5ff",
+                        "on-primary-fixed": "#00174c",
+                        "surface-dim": "#d8dade",
+                        "tertiary": "#365789",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#5070a4",
+                        "surface-tint": "#0052dd",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3134",
+                        "background": "#f7f9fd",
+                        "outline": "#737687",
+                        "outline-variant": "#c3c6d8",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e6e8ec",
+                        "secondary-container": "#5dfd8a",
+                        "on-secondary-container": "#007232",
+                        "on-surface-variant": "#424656",
+                        "primary-container": "#0f62fe",
+                        "primary": "#004ccd",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#a8c8ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#f7f9fd",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#f1f4ff",
+                        "tertiary-fixed": "#d6e3ff",
+                        "on-secondary-fixed": "#002109"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-page": "32px",
+                        "stack-sm": "4px",
+                        "container-max-width": "1440px",
+                        "base": "8px",
+                        "sidebar-width": "260px",
+                        "stack-md": "12px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "code-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "code-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f2f4f8; } /* surface-container-low fallback */
+    </style>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-lg min-h-screen flex">
+<!-- SideNavBar -->
+<nav aria-label="Sidebar Navigation" class="fixed top-0 left-0 h-full w-[260px] hidden lg:flex flex-col bg-slate-900 dark:bg-black border-r border-slate-800 shadow-2xl z-40">
+<div class="p-6">
+<h1 class="text-xl font-black text-white tracking-tighter">MarketingCRM</h1>
+<p class="text-blue-500 font-label-md text-label-md mt-1">Enterprise Suite</p>
+</div>
+<div class="flex flex-col py-6 space-y-1 flex-1 font-sans tracking-tight">
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">send</span>
+                Send Message
+            </a>
+<a aria-current="page" class="bg-blue-600/10 text-white border-l-4 border-blue-600 py-3 px-6 flex items-center gap-3 hover:bg-slate-800/50 transition-all duration-200 scale-95 transition-transform opacity-80" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">outbox</span>
+                Bulk Message
+            </a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">history</span>
+                Sent History
+            </a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">group</span>
+                User Management
+            </a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">badge</span>
+                Roles
+            </a>
+</div>
+<div class="mt-auto pb-6">
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-w-0 lg:pl-[260px]">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-0 lg:left-[260px] h-16 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-6 w-full font-sans antialiased text-sm font-medium">
+<div class="flex items-center w-full max-w-md">
+<div class="relative w-full">
+<span aria-hidden="true" class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-transparent rounded-full focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-on-surface placeholder-gray-500" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4 ml-auto">
+<button aria-label="Notifications" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-full">
+<span aria-hidden="true" class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="Settings" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-full">
+<span aria-hidden="true" class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-8 h-8 rounded-full overflow-hidden border border-gray-200 ml-2 focus:outline-none focus:ring-2 focus:ring-primary">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="professional headshot of a business person on a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCTRThDWQZK9pfIfuzCrCCpzy357ByCxVhPtPDsInKfMsp4st9SkVZuIFx32yXC7GE7MJMIyZ-A8rs0ctIPkKZpojkw_1e8vKXesEtsf-bxj4bon7f-NBHnzTq9C-5VeaP2vNQF8Oo7-8NKP95Qf-_PEB3vX7GZNTEwfA8ouQxzye37I6P3MfgI0at27PZ83xuPAVUI8fIFxqUmQhQ50fpx3kKiQEGhvzywK88Ke6YgojOVNBev57IYjQMcrKlVcx9Gnvx6pi2tLg"/>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-page pt-24 max-w-container-max-width mx-auto w-full">
+<div class="mb-8">
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Bulk Message Campaign</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Upload your contact list to initiate a mass communication sequence.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Upload Section (Bento Card 1) -->
+<div class="lg:col-span-12 xl:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-gutter flex flex-col">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">Audience Data</h3>
+<div class="border-2 border-dashed border-outline-variant rounded-lg bg-surface flex flex-col items-center justify-center py-16 px-6 text-center hover:bg-primary-fixed/30 hover:border-primary transition-colors cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span aria-hidden="true" class="material-symbols-outlined text-primary text-3xl">cloud_upload</span>
+</div>
+<p class="font-headline-md text-headline-md text-on-surface mb-2">Drag &amp; Drop your file here</p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Supports .csv, .xls, .xlsx (Max 50MB)</p>
+<button class="bg-primary hover:bg-primary/90 text-on-primary px-6 py-2 rounded-lg font-label-md text-label-md transition-colors flex items-center gap-2">
+<span aria-hidden="true" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+                            Browse Files
+                        </button>
+</div>
+<!-- File processing mock state -->
+<div class="mt-6 bg-surface-container rounded-lg p-4 flex items-center justify-between hidden">
+<div class="flex items-center gap-4">
+<span aria-hidden="true" class="material-symbols-outlined text-tertiary">description</span>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Q3_Marketing_List.csv</p>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">2.4 MB • 1,204 Rows</p>
+</div>
+</div>
+<button aria-label="Remove file" class="text-error hover:bg-error-container p-2 rounded-full transition-colors">
+<span aria-hidden="true" class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Campaign Setup (Bento Card 2) -->
+<div class="lg:col-span-12 xl:col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-gutter flex flex-col">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-6">Campaign Settings</h3>
+<div class="space-y-6 flex-1">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-2">Campaign Name</label>
+<input class="w-full border border-outline-variant rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary-fixed outline-none text-on-surface" placeholder="e.g. Q3 Promo Blast" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-2">Message Template</label>
+<select class="w-full border border-outline-variant rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary-fixed outline-none text-on-surface bg-white">
+<option>Select a template...</option>
+<option>Welcome Series 1</option>
+<option>Promo Alert - Discount</option>
+<option>Event Reminder</option>
+</select>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-2">Channel</label>
+<div class="grid grid-cols-2 gap-4">
+<label class="border border-outline-variant rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="text-primary focus:ring-primary" name="channel" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">Email</span>
+</label>
+<label class="border border-outline-variant rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-surface-container transition-colors">
+<input class="text-secondary focus:ring-secondary" name="channel" type="radio"/>
+<span class="font-body-md text-body-md text-on-surface">WhatsApp</span>
+</label>
+</div>
+</div>
+</div>
+<div class="pt-6 mt-6 border-t border-outline-variant">
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary py-3 rounded-lg font-label-md text-label-md transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
+<span aria-hidden="true" class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+                            Start Campaign
+                        </button>
+</div>
+</div>
+<!-- Data Preview Section -->
+<div class="lg:col-span-12 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-gutter border-b border-outline-variant flex justify-between items-center bg-surface">
+<h3 class="font-headline-md text-headline-md text-on-surface">Data Preview</h3>
+<span class="bg-surface-container-high text-on-surface-variant font-code-sm text-code-sm px-3 py-1 rounded-full">No file uploaded</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant font-label-md text-label-md text-on-surface-variant">
+<th class="py-3 px-6">ID</th>
+<th class="py-3 px-6">Name</th>
+<th class="py-3 px-6">Email</th>
+<th class="py-3 px-6">Phone</th>
+<th class="py-3 px-6">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface divide-y divide-outline-variant opacity-30">
+<tr>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6"><span class="bg-surface-container px-2 py-1 rounded text-on-surface-variant text-xs">Pending</span></td>
+</tr>
+<tr>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6"><span class="bg-surface-container px-2 py-1 rounded text-on-surface-variant text-xs">Pending</span></td>
+</tr>
+<tr>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6 text-on-surface-variant">---</td>
+<td class="py-4 px-6"><span class="bg-surface-container px-2 py-1 rounded text-on-surface-variant text-xs">Pending</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="bg-surface p-4 text-center border-t border-outline-variant">
+<p class="font-body-md text-body-md text-on-surface-variant">Upload a file to see preview data</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

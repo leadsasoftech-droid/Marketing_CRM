@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Send Message - MarketingCRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f2f4f8",
+                      "primary-fixed": "#dbe1ff",
+                      "surface": "#f7f9fd",
+                      "on-tertiary-fixed": "#001b3d",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f5",
+                      "secondary-fixed-dim": "#3de273",
+                      "on-secondary-fixed-variant": "#005322",
+                      "on-surface": "#191c1f",
+                      "on-tertiary-fixed-variant": "#244778",
+                      "surface-container": "#eceef2",
+                      "on-background": "#191c1f",
+                      "secondary-fixed": "#66ff8e",
+                      "surface-container-highest": "#e0e2e6",
+                      "surface-variant": "#e0e2e6",
+                      "error-container": "#ffdad6",
+                      "on-primary-container": "#f3f3ff",
+                      "secondary": "#006d2f",
+                      "on-primary-fixed-variant": "#003da9",
+                      "inverse-primary": "#b4c5ff",
+                      "on-primary-fixed": "#00174c",
+                      "surface-dim": "#d8dade",
+                      "tertiary": "#365789",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-container": "#5070a4",
+                      "surface-tint": "#0052dd",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#2d3134",
+                      "background": "#f7f9fd",
+                      "outline": "#737687",
+                      "outline-variant": "#c3c6d8",
+                      "error": "#ba1a1a",
+                      "surface-container-high": "#e6e8ec",
+                      "secondary-container": "#5dfd8a",
+                      "on-secondary-container": "#007232",
+                      "on-surface-variant": "#424656",
+                      "primary-container": "#0f62fe",
+                      "primary": "#004ccd",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#a8c8ff",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-bright": "#f7f9fd",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#f1f4ff",
+                      "tertiary-fixed": "#d6e3ff",
+                      "on-secondary-fixed": "#002109"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-page": "32px",
+                      "stack-sm": "4px",
+                      "container-max-width": "1440px",
+                      "base": "8px",
+                      "sidebar-width": "260px",
+                      "stack-md": "12px",
+                      "stack-lg": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "code-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-xl": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-md min-h-screen font-sans antialiased">
+<!-- SideNavBar -->
+<nav class="bg-slate-900 dark:bg-black text-blue-500 font-sans tracking-tight fixed top-0 left-0 h-full w-[260px] hidden lg:flex flex-col border-r border-slate-800 shadow-2xl z-40">
+<div class="p-6">
+<h1 class="text-xl font-black text-white tracking-tighter">MarketingCRM</h1>
+<p class="text-slate-400 font-code-sm text-code-sm mt-1">Enterprise Suite</p>
+</div>
+<div class="flex flex-col py-6 space-y-1 flex-1">
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="bg-blue-600/10 text-white border-l-4 border-blue-600 py-3 px-6 flex items-center gap-3 hover:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+<span class="font-semibold">Send Message</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="outbox">outbox</span>
+<span>Bulk Message</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Sent History</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>User Management</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span>Roles</span>
+</a>
+</div>
+<div class="p-6">
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 hover:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="lg:pl-[260px] flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-500 font-sans antialiased text-sm font-medium fixed top-0 right-0 left-0 lg:left-[260px] h-16 z-30 border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-6 w-full lg:w-auto">
+<div class="flex items-center lg:hidden">
+<span class="text-xl font-black text-on-surface tracking-tighter hidden">MarketingCRM</span>
+<!-- Mobile Menu Toggle -->
+<button class="p-2 text-on-surface-variant hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+<div class="flex-1 flex justify-start lg:justify-start px-4">
+<div class="relative w-full max-w-md hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container rounded-full border-none focus:ring-2 focus:ring-primary text-body-md font-body-md text-on-surface placeholder:text-outline-variant transition-shadow" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-full hover:opacity-80 transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-full hover:opacity-80 transition-all">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant bg-surface-container-highest flex-shrink-0 cursor-pointer">
+<img alt="User avatar" class="h-full w-full object-cover" data-alt="professional headshot of a person with neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAC7_Ps9HcyeL-SDG7kZeHBHz-pDscax8z-z59jTfRbHviHtMnrRGLt3swZlSOCLUww1S2pad3xmFbUOqFCS4E9f55CSOMxw3yWDN8fMUsIxoWR1Cj1iPrkU67YGSQeFJNfoCWvYAv-i-R629u8pOg8JLB6sVzz--Ve03pLngUUSCbUqmTzi1y36FzHIVyUuyApdRqnHxdqP5CLYQJdu0splvo0AQCEDcDuVUlM-ElT2t5tAlp2kkU3DaXmCsi3_u0PM6nFvRjwFBM"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<main class="flex-1 pt-16 p-6 lg:p-margin-page">
+<div class="max-w-3xl mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-8">
+<h2 class="text-headline-xl font-headline-xl text-on-surface mb-2">Send Message</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant">Compose and send a single WhatsApp message directly to a contact.</p>
+</div>
+<!-- Main Form Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-gutter flex flex-col gap-stack-lg">
+<!-- Recipient Section -->
+<div class="flex flex-col gap-stack-md">
+<label class="text-label-md font-label-md text-on-surface">Recipient Phone Number</label>
+<div class="flex gap-2 w-full">
+<div class="relative w-1/3 max-w-[120px]">
+<select class="w-full h-12 appearance-none bg-surface border border-outline-variant rounded-lg pl-4 pr-8 py-2 text-body-md font-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow">
+<option>+1 (US)</option>
+<option>+44 (UK)</option>
+<option>+91 (IN)</option>
+<option>+55 (BR)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">expand_more</span>
+</div>
+<input class="flex-1 h-12 bg-surface border border-outline-variant rounded-lg px-4 py-2 text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow" placeholder="e.g. 555-0123" type="tel"/>
+</div>
+</div>
+<!-- Message Section -->
+<div class="flex flex-col gap-stack-md">
+<div class="flex justify-between items-end">
+<label class="text-label-md font-label-md text-on-surface">Message Content</label>
+<span class="text-code-sm font-code-sm text-outline">0 / 4096</span>
+</div>
+<textarea class="w-full bg-surface border border-outline-variant rounded-lg p-4 text-body-md font-body-md text-on-surface placeholder:text-outline-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-shadow resize-y" placeholder="Type your WhatsApp message here..." rows="6"></textarea>
+<!-- Quick Formatting/Attachments Tools (Optional enhancement) -->
+<div class="flex gap-2 mt-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded-md transition-colors" title="Attach Image">
+<span class="material-symbols-outlined text-sm">image</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded-md transition-colors" title="Attach Document">
+<span class="material-symbols-outlined text-sm">attach_file</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container hover:text-primary rounded-md transition-colors" title="Insert Variable">
+<span class="material-symbols-outlined text-sm">data_object</span>
+</button>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex justify-end gap-4 mt-4 pt-6 border-t border-surface-container-highest">
+<button class="px-6 py-2 rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md transition-colors">
+                            Save as Draft
+                        </button>
+<button class="px-6 py-2 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-container font-label-md text-label-md transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">send</span>
+                            Send via WhatsApp
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

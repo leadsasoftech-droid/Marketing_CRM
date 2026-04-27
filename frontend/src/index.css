@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface-container-low: #f2f4f8;
+  --color-primary-fixed: #dbe1ff;
+  --color-surface: #f7f9fd;
+  --color-on-tertiary-fixed: #001b3d;
+  --color-on-tertiary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-inverse-on-surface: #eff1f5;
+  --color-secondary-fixed-dim: #3de273;
+  --color-on-secondary-fixed-variant: #005322;
+  --color-on-surface: #191c1f;
+  --color-on-tertiary-fixed-variant: #244778;
+  --color-surface-container: #eceef2;
+  --color-on-background: #191c1f;
+  --color-secondary-fixed: #66ff8e;
+  --color-surface-container-highest: #e0e2e6;
+  --color-surface-variant: #e0e2e6;
+  --color-error-container: #ffdad6;
+  --color-on-primary-container: #f3f3ff;
+  --color-secondary: #006d2f;
+  --color-on-primary-fixed-variant: #003da9;
+  --color-inverse-primary: #b4c5ff;
+  --color-on-primary-fixed: #00174c;
+  --color-surface-dim: #d8dade;
+  --color-tertiary: #365789;
+  --color-surface-container-lowest: #ffffff;
+  --color-tertiary-container: #5070a4;
+  --color-surface-tint: #0052dd;
+  --color-on-error: #ffffff;
+  --color-inverse-surface: #2d3134;
+  --color-background: #f7f9fd;
+  --color-outline: #737687;
+  --color-outline-variant: #c3c6d8;
+  --color-error: #ba1a1a;
+  --color-surface-container-high: #e6e8ec;
+  --color-secondary-container: #5dfd8a;
+  --color-on-secondary-container: #007232;
+  --color-on-surface-variant: #424656;
+  --color-primary-container: #0f62fe;
+  --color-primary: #004ccd;
+  --color-on-error-container: #93000a;
+  --color-tertiary-fixed-dim: #a8c8ff;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-surface-bright: #f7f9fd;
+  --color-on-primary: #ffffff;
+  --color-on-tertiary-container: #f1f4ff;
+  --color-tertiary-fixed: #d6e3ff;
+  --color-on-secondary-fixed: #002109;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f2f4f8;
+    color: #191c1f;
+  }
+
+  button,
+  a,
+  label,
+  select,
+  input[type="file"],
+  input[type="checkbox"],
+  input[type="radio"],
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  a.disabled {
+    cursor: not-allowed;
+  }
+}

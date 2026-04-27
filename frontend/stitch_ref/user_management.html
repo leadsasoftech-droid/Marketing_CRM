@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Management - MarketingCRM</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind Setup -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f8",
+                        "primary-fixed": "#dbe1ff",
+                        "surface": "#f7f9fd",
+                        "on-tertiary-fixed": "#001b3d",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eff1f5",
+                        "secondary-fixed-dim": "#3de273",
+                        "on-secondary-fixed-variant": "#005322",
+                        "on-surface": "#191c1f",
+                        "on-tertiary-fixed-variant": "#244778",
+                        "surface-container": "#eceef2",
+                        "on-background": "#191c1f",
+                        "secondary-fixed": "#66ff8e",
+                        "surface-container-highest": "#e0e2e6",
+                        "surface-variant": "#e0e2e6",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#f3f3ff",
+                        "secondary": "#006d2f",
+                        "on-primary-fixed-variant": "#003da9",
+                        "inverse-primary": "#b4c5ff",
+                        "on-primary-fixed": "#00174c",
+                        "surface-dim": "#d8dade",
+                        "tertiary": "#365789",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#5070a4",
+                        "surface-tint": "#0052dd",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2d3134",
+                        "background": "#f7f9fd",
+                        "outline": "#737687",
+                        "outline-variant": "#c3c6d8",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e6e8ec",
+                        "secondary-container": "#5dfd8a",
+                        "on-secondary-container": "#007232",
+                        "on-surface-variant": "#424656",
+                        "primary-container": "#0f62fe",
+                        "primary": "#004ccd",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#a8c8ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#f7f9fd",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#f1f4ff",
+                        "tertiary-fixed": "#d6e3ff",
+                        "on-secondary-fixed": "#002109"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-page": "32px",
+                        "stack-sm": "4px",
+                        "container-max-width": "1440px",
+                        "base": "8px",
+                        "sidebar-width": "260px",
+                        "stack-md": "12px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "code-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "code-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-md text-body-md min-h-screen">
+<!-- Shared Component: SideNavBar -->
+<nav class="fixed top-0 left-0 h-full w-[260px] hidden lg:flex flex-col bg-slate-900 dark:bg-black border-r border-slate-800 shadow-2xl z-40">
+<div class="px-6 py-8 border-b border-slate-800/50">
+<h1 class="text-xl font-black text-white tracking-tighter">MarketingCRM</h1>
+<p class="font-sans tracking-tight text-slate-400 text-sm mt-1">Enterprise Suite</p>
+</div>
+<div class="flex flex-col py-6 space-y-1 flex-grow overflow-y-auto font-sans tracking-tight">
+<!-- Inactive -->
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<!-- Inactive -->
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+                Send Message
+            </a>
+<!-- Inactive -->
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="outbox">outbox</span>
+                Bulk Message
+            </a>
+<!-- Inactive -->
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+                Sent History
+            </a>
+<!-- Active -->
+<a class="bg-blue-600/10 text-white border-l-4 border-blue-600 py-3 px-6 flex items-center gap-3 hover:bg-slate-800/50 transition-all duration-200 opacity-80 scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                User Management
+            </a>
+<!-- Inactive -->
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+                Roles
+            </a>
+</div>
+<div class="p-6 border-t border-slate-800/50">
+<!-- Inactive Logout -->
+<a class="text-slate-400 py-3 px-0 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- Shared Component: TopNavBar -->
+<header class="fixed top-0 right-0 left-0 lg:left-[260px] h-16 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-6 w-full font-sans antialiased text-sm font-medium">
+<div class="flex items-center">
+<!-- Search bar implied on left per JSON, adding a generic visual representation -->
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" data-icon="search" style="font-size: 20px;">search</span>
+<input class="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold ml-2">
+                JD
+            </div>
+</div>
+</header>
+<!-- Main Workspace Canvas -->
+<main class="lg:ml-sidebar-width pt-[64px] min-h-screen p-margin-page max-w-container-max-width mx-auto">
+<div class="mb-8">
+<h2 class="font-headline-xl text-headline-xl text-on-surface">User Management</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Manage team access, roles, and security credentials.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter">
+<!-- Left Panel: Existing Users Table (Span 8) -->
+<div class="xl:col-span-8 bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0px_4px_12px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col">
+<div class="p-stack-lg border-b border-surface-variant flex items-center justify-between bg-surface">
+<h3 class="font-headline-md text-headline-md text-on-surface">Existing Users</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-surface-variant">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">User ID / Name</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Role</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Last Login</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<!-- User Row 1 -->
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 flex items-center gap-4">
+<div class="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed font-bold">
+                                        SJ
+                                    </div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface text-[15px]">Sarah Jenkins</p>
+<p class="font-body-md text-code-sm text-on-surface-variant">sarah.j@company.com</p>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-fixed-dim text-on-primary-fixed-variant">
+                                        Administrator
+                                    </span>
+</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">
+                                    Today, 09:41 AM
+                                </td>
+<td class="py-4 px-6 text-right space-x-2">
+<button aria-label="Edit User" class="text-outline hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit" style="font-size: 20px;">edit</span>
+</button>
+<button aria-label="Update Password" class="text-outline hover:text-secondary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="key" style="font-size: 20px;">key</span>
+</button>
+</td>
+</tr>
+<!-- User Row 2 -->
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 flex items-center gap-4">
+<div class="h-10 w-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold">
+                                        MR
+                                    </div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface text-[15px]">Marcus Reed</p>
+<p class="font-body-md text-code-sm text-on-surface-variant">m.reed@company.com</p>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-highest text-on-surface-variant border border-outline-variant">
+                                        Campaign Manager
+                                    </span>
+</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">
+                                    Yesterday, 14:22 PM
+                                </td>
+<td class="py-4 px-6 text-right space-x-2">
+<button aria-label="Edit User" class="text-outline hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit" style="font-size: 20px;">edit</span>
+</button>
+<button aria-label="Update Password" class="text-outline hover:text-secondary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="key" style="font-size: 20px;">key</span>
+</button>
+</td>
+</tr>
+<!-- User Row 3 -->
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 flex items-center gap-4">
+<div class="h-10 w-10 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-bold">
+                                        AL
+                                    </div>
+<div>
+<p class="font-headline-md text-body-lg text-on-surface text-[15px]">Amanda Lin</p>
+<p class="font-body-md text-code-sm text-on-surface-variant">alin.marketing@company.com</p>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-highest text-on-surface-variant border border-outline-variant">
+                                        Analyst
+                                    </span>
+</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">
+                                    Oct 12, 2023
+                                </td>
+<td class="py-4 px-6 text-right space-x-2">
+<button aria-label="Edit User" class="text-outline hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="edit" style="font-size: 20px;">edit</span>
+</button>
+<button aria-label="Update Password" class="text-outline hover:text-secondary transition-colors p-1">
+<span class="material-symbols-outlined" data-icon="key" style="font-size: 20px;">key</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-surface-variant bg-surface-bright flex justify-between items-center text-sm text-on-surface-variant mt-auto">
+<span>Showing 1 to 3 of 12 entries</span>
+<div class="flex gap-1">
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-low transition-colors disabled:opacity-50" disabled="">Prev</button>
+<button class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-low transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Right Panel: Create New User Form (Span 4) -->
+<div class="xl:col-span-4 bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0px_8px_24px_rgba(0,0,0,0.04)] h-fit relative overflow-hidden">
+<!-- Decorative top bar -->
+<div class="h-1 w-full bg-primary absolute top-0 left-0"></div>
+<div class="p-stack-lg">
+<div class="flex items-center gap-3 mb-6">
+<div class="h-10 w-10 rounded-lg bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface leading-tight">Create New User</h3>
+<p class="font-body-md text-label-md text-on-surface-variant font-normal">Provision a new account.</p>
+</div>
+</div>
+<form class="space-y-stack-md flex flex-col">
+<!-- Input Group: User ID -->
+<div class="flex flex-col space-y-2">
+<label class="font-label-md text-label-md text-on-surface" for="userId">User ID / Email</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="mail" style="font-size: 18px;">mail</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" id="userId" placeholder="name@company.com" type="email"/>
+</div>
+</div>
+<!-- Input Group: Password -->
+<div class="flex flex-col space-y-2">
+<label class="font-label-md text-label-md text-on-surface" for="password">Temporary Password</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="lock" style="font-size: 18px;">lock</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" id="password" placeholder="••••••••" type="password"/>
+</div>
+<p class="text-xs text-on-surface-variant font-code-sm">User will be forced to reset upon first login.</p>
+</div>
+<!-- Input Group: Role Selection -->
+<div class="flex flex-col space-y-2">
+<label class="font-label-md text-label-md text-on-surface" for="role">System Role</label>
+<div class="relative">
+<select class="w-full pl-4 pr-10 py-2.5 bg-surface border border-outline-variant rounded-lg text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" id="role">
+<option disabled="" selected="" value="">Select a role...</option>
+<option value="admin">Administrator</option>
+<option value="manager">Campaign Manager</option>
+<option value="analyst">Analyst</option>
+<option value="viewer">Viewer</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-4 mt-2 border-t border-surface-variant">
+<button class="w-full bg-primary hover:bg-surface-tint text-on-primary font-label-md text-body-md py-3 rounded-lg shadow-sm transition-all flex justify-center items-center gap-2" type="button">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-size: 20px;">check_circle</span>
+                                Provision User Account
+                            </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</main>
+</body></html>

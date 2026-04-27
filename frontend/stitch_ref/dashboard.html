@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MarketingCRM - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f2f4f8",
+                      "primary-fixed": "#dbe1ff",
+                      "surface": "#f7f9fd",
+                      "on-tertiary-fixed": "#001b3d",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eff1f5",
+                      "secondary-fixed-dim": "#3de273",
+                      "on-secondary-fixed-variant": "#005322",
+                      "on-surface": "#191c1f",
+                      "on-tertiary-fixed-variant": "#244778",
+                      "surface-container": "#eceef2",
+                      "on-background": "#191c1f",
+                      "secondary-fixed": "#66ff8e",
+                      "surface-container-highest": "#e0e2e6",
+                      "surface-variant": "#e0e2e6",
+                      "error-container": "#ffdad6",
+                      "on-primary-container": "#f3f3ff",
+                      "secondary": "#006d2f",
+                      "on-primary-fixed-variant": "#003da9",
+                      "inverse-primary": "#b4c5ff",
+                      "on-primary-fixed": "#00174c",
+                      "surface-dim": "#d8dade",
+                      "tertiary": "#365789",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-container": "#5070a4",
+                      "surface-tint": "#0052dd",
+                      "on-error": "#ffffff",
+                      "inverse-surface": "#2d3134",
+                      "background": "#f7f9fd",
+                      "outline": "#737687",
+                      "outline-variant": "#c3c6d8",
+                      "error": "#ba1a1a",
+                      "surface-container-high": "#e6e8ec",
+                      "secondary-container": "#5dfd8a",
+                      "on-secondary-container": "#007232",
+                      "on-surface-variant": "#424656",
+                      "primary-container": "#0f62fe",
+                      "primary": "#004ccd",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#a8c8ff",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-bright": "#f7f9fd",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#f1f4ff",
+                      "tertiary-fixed": "#d6e3ff",
+                      "on-secondary-fixed": "#002109"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-page": "32px",
+                      "stack-sm": "4px",
+                      "container-max-width": "1440px",
+                      "base": "8px",
+                      "sidebar-width": "260px",
+                      "stack-md": "12px",
+                      "stack-lg": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "code-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-xl": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-xl": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #F2F4F8; /* surface-container-low fallback */
+        }
+    </style>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed top-0 left-0 h-full w-[260px] hidden lg:flex flex-col bg-slate-900 dark:bg-black border-r border-slate-800 shadow-2xl font-sans tracking-tight z-40">
+<div class="py-6 px-6">
+<h1 class="text-xl font-black text-white tracking-tighter">MarketingCRM</h1>
+<p class="text-slate-400 font-label-md text-label-md mt-1">Enterprise Suite</p>
+</div>
+<div class="flex flex-col py-6 space-y-1 flex-1">
+<a class="bg-blue-600/10 text-white border-l-4 border-blue-600 py-3 px-6 flex items-center gap-3 opacity-80 transition-all hover:bg-slate-800/50 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+<span>Send Message</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="outbox">outbox</span>
+<span>Bulk Message</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Sent History</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>User Management</span>
+</a>
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span>Roles</span>
+</a>
+</div>
+<div class="mt-auto py-6">
+<a class="text-slate-400 py-3 px-6 flex items-center gap-3 hover:text-white hover:bg-slate-800/50 transition-all duration-200 scale-on-click" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 lg:ml-[260px] flex flex-col min-h-screen w-full">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-0 lg:left-[260px] h-16 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-6 w-full font-sans antialiased text-sm font-medium">
+<div class="flex items-center flex-1">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-DEFAULT focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-on-surface placeholder-gray-500" placeholder="Search..." type="text"/>
+</div>
+<h2 class="hidden font-bold tracking-tight text-on-surface lg:ml-6">MarketingCRM</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden border border-outline-variant cursor-pointer">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="Close up professional headshot of a smiling man in a business casual shirt" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRAJ-fAPeeXwrEb50qGedn_QAWxVZovMERubbym4DIc8SJu6WLfgu1ua4sexOF0ns-Dzl8DT3t6yhIchwB0rwmTT1qRFD-63SBh8LcRwk45LjxdA8EHRaZEKaz36nGwsGTUyiibPEQtVDKqGbclHnYrEnJCBM_2GZrTkcoNDQ3xxWJCvNefPNFDgGfDo5v9eF3fOKymE2papILe7qqTFL-Xtyo49HR2NUCyRG3O-0kEkJPuIStgkVpEPDWXNDhsoKWdQS_2M8vLCY"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<main class="flex-1 pt-24 px-gutter pb-gutter max-w-container-max-width mx-auto w-full">
+<div class="mb-8 flex justify-between items-end">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Dashboard Overview</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Monitor your campaign performance and messaging metrics.</p>
+</div>
+<button class="bg-secondary text-on-secondary px-4 py-2 rounded-DEFAULT font-label-md text-label-md flex items-center gap-2 hover:bg-secondary/90 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    New Campaign
+                </button>
+</div>
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<!-- Total Sent -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+<div class="relative z-10 flex justify-between items-start mb-4">
+<div class="p-3 bg-primary/10 text-primary rounded-DEFAULT">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</div>
+<span class="text-secondary font-label-md text-label-md flex items-center bg-secondary/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="arrow_upward">arrow_upward</span>
+                            12.5%
+                        </span>
+</div>
+<div class="relative z-10 mt-auto">
+<h3 class="font-body-md text-body-md text-on-surface-variant mb-1">Total Messages Sent</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">1.2M</p>
+</div>
+</div>
+<!-- Delivered -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+<div class="relative z-10 flex justify-between items-start mb-4">
+<div class="p-3 bg-secondary/10 text-secondary rounded-DEFAULT">
+<span class="material-symbols-outlined" data-icon="done_all">done_all</span>
+</div>
+<span class="text-secondary font-label-md text-label-md flex items-center bg-secondary/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="arrow_upward">arrow_upward</span>
+                            4.2%
+                        </span>
+</div>
+<div class="relative z-10 mt-auto">
+<h3 class="font-body-md text-body-md text-on-surface-variant mb-1">Delivered Rate</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">98.4%</p>
+</div>
+</div>
+<!-- Remaining Credits -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-6 shadow-sm flex flex-col justify-between h-full relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary/5 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+<div class="relative z-10 flex justify-between items-start mb-4">
+<div class="p-3 bg-tertiary/10 text-tertiary rounded-DEFAULT">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<span class="text-error font-label-md text-label-md flex items-center bg-error/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px] mr-1" data-icon="warning">warning</span>
+                            Low
+                        </span>
+</div>
+<div class="relative z-10 mt-auto">
+<h3 class="font-body-md text-body-md text-on-surface-variant mb-1">Remaining Credits</h3>
+<p class="font-headline-xl text-headline-xl text-on-surface">45,230</p>
+</div>
+</div>
+</div>
+<!-- Chart Section -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm mb-8 overflow-hidden">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<h3 class="font-headline-md text-headline-md text-on-surface">Messaging Activity (Last 7 Days)</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="p-6 h-[300px] flex items-end justify-between gap-2">
+<!-- Simple CSS Bar Chart -->
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[40%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">12k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Mon</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[60%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">18k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Tue</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[35%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">10k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Wed</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[80%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">24k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Thu</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary rounded-t-sm group-hover:bg-primary/90 transition-colors h-[95%] relative shadow-[0_0_15px_rgba(0,76,205,0.2)]">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">28k Sent</div>
+</div>
+<span class="text-xs font-bold text-primary mt-2">Fri</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[20%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">6k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Sat</span>
+</div>
+<div class="flex flex-col items-center flex-1 h-full justify-end group">
+<div class="w-full max-w-[40px] bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-colors h-[15%] relative">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity">4k Sent</div>
+</div>
+<span class="text-xs text-on-surface-variant mt-2">Sun</span>
+</div>
+</div>
+</div>
+<!-- Recent Campaigns List -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<h3 class="font-headline-md text-headline-md text-on-surface">Active Campaigns</h3>
+<a class="text-primary font-label-md text-label-md hover:underline" href="#">View All</a>
+</div>
+<div class="divide-y divide-outline-variant">
+<!-- Item 1 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-xl" data-icon="mark_email_read">mark_email_read</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">Summer Sale Blast</h4>
+<p class="font-code-sm text-code-sm text-on-surface-variant">WhatsApp • 50,000 recipients</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="text-right hidden sm:block">
+<p class="font-body-md text-body-md font-semibold text-on-surface">85%</p>
+<p class="font-code-sm text-code-sm text-on-surface-variant">Delivery Rate</p>
+</div>
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary/10 text-secondary border border-secondary/20">Running</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 hover:bg-surface-container-low transition-colors flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl" data-icon="sms">sms</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md font-semibold text-on-surface">New Feature Announcement</h4>
+<p class="font-code-sm text-code-sm text-on-surface-variant">SMS • 12,500 recipients</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="text-right hidden sm:block">
+<p class="font-body-md text-body-md font-semibold text-on-surface">--</p>
+<p class="font-code-sm text-code-sm text-on-surface-variant">Delivery Rate</p>
+</div>
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-variant text-on-surface-variant border border-outline-variant">Draft</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

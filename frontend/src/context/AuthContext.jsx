@@ -12,14 +12,8 @@ export function AuthProvider({ children }) {
     let isCancelled = false;
 
     if (!token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUser(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsBootstrapping(false);
       return undefined;
     }
-
-    setIsBootstrapping(true);
 
     authApi
       .me(token)

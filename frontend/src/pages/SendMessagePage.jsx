@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { messageApi } from "../services/api";
 import { toast } from "react-hot-toast";
@@ -12,11 +12,16 @@ const countryOptions = [
     { label: "+55 (BR)", value: "55" },
 ];
 
+function getDisplayStatus(status) {
+    return status === "pending" ? "processing" : status;
+}
+
 function buildResultSummary(result) {
     const history = result?.history || null;
     const delivery = result?.delivery || null;
-    const status =
-        history?.status || (delivery?.mode === "mock" ? "sent" : delivery ? "pending" : "queued");
+    const rawStatus =
+        history?.status || (delivery ? "pending" : "queued");
+    const status = getDisplayStatus(rawStatus);
 
     return {
         delivery,
@@ -28,7 +33,8 @@ function buildResultSummary(result) {
         warning: delivery?.warning || "",
         status,
         isQueued: status === "queued",
-        isAwaitingConfirmation: status === "pending",
+        isProcessing: status === "processing",
+        isFailed: status === "failed",
     };
 }
 
@@ -43,6 +49,58 @@ export default function SendMessagePage() {
     const submittingRef = useRef(false);
     const [result, setResult] = useState(null);
     const resultSummary = buildResultSummary(result);
+
+    useEffect(() => {
+        if (!token || !result?.history?._id || result?.history?.status !== "pending") {
+            return undefined;
+        }
+
+        let isCancelled = false;
+
+        async function pollHistoryStatus() {
+            for (let attempt = 0; attempt < 4; attempt += 1) {
+                if (attempt > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                }
+
+                try {
+                    const payload = await messageApi.getHistoryById(result.history._id, token);
+                    if (isCancelled) {
+                        return;
+                    }
+
+                    const nextHistory = payload.data.history;
+                    setResult((currentResult) =>
+                        currentResult
+                            ? {
+                                ...currentResult,
+                                history: nextHistory,
+                            }
+                            : currentResult,
+                    );
+
+                    if (nextHistory.status === "failed") {
+                        toast.error(nextHistory.errorMessage || "Message delivery failed.");
+                        return;
+                    }
+
+                    if (nextHistory.status === "sent") {
+                        return;
+                    }
+                } catch {
+                    if (!isCancelled) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        void pollHistoryStatus();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [result?.history?._id, result?.history?.status, token]);
 
     const handleChange = (key) => (event) => {
         setForm((currentForm) => ({
@@ -200,28 +258,36 @@ export default function SendMessagePage() {
                         <div className="space-y-4">
                             <div className={`rounded-xl px-4 py-3 border ${resultSummary.isQueued
                                 ? "bg-primary/10 border-primary/20"
-                                : resultSummary.isAwaitingConfirmation
+                                : resultSummary.isProcessing
                                     ? "bg-amber-100 border-amber-200"
-                                    : "bg-secondary/10 border-secondary/20"
+                                    : resultSummary.isFailed
+                                        ? "bg-error-container/40 border-error/30"
+                                        : "bg-secondary/10 border-secondary/20"
                                 }`}>
                                 <p className={`text-sm font-semibold ${resultSummary.isQueued
                                     ? "text-primary"
-                                    : resultSummary.isAwaitingConfirmation
+                                    : resultSummary.isProcessing
                                         ? "text-amber-800"
-                                        : "text-secondary"
+                                        : resultSummary.isFailed
+                                            ? "text-error"
+                                            : "text-secondary"
                                     }`}>
                                     {resultSummary.isQueued
                                         ? "Message queued"
-                                        : resultSummary.isAwaitingConfirmation
-                                            ? "Awaiting delivery confirmation"
-                                            : "Message sent"}
+                                        : resultSummary.isProcessing
+                                            ? "Message processing"
+                                            : resultSummary.isFailed
+                                                ? "Message failed"
+                                                : "Message sent"}
                                 </p>
                                 <p className="text-xs text-on-surface-variant mt-1">
                                     {resultSummary.isQueued
                                         ? "The background worker will process this delivery shortly. Track progress in Sent History."
-                                        : resultSummary.isAwaitingConfirmation
-                                            ? `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode} • Final status will update from the provider webhook.`
-                                            : `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode}`}
+                                        : resultSummary.isProcessing
+                                            ? `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode} • Final status is being synced from Fast2SMS.`
+                                            : resultSummary.isFailed
+                                                ? (resultSummary.history?.errorMessage || "Fast2SMS reported a delivery failure for this send.")
+                                                : `Provider: ${resultSummary.provider} • Mode: ${resultSummary.mode}`}
                                 </p>
                                 {resultSummary.warning ? (
                                     <p className="text-xs text-amber-800 mt-2">{resultSummary.warning}</p>

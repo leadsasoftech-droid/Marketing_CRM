@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 const { redisOptions } = require("../config/redis");
 const { QUEUE_NAME } = require("../queues/whatsapp.queue");
+const { waitForProviderStatusSync } = require("../services/providerStatusSync.service");
 const { sendTextMessage } = require("../services/whatsapp.service");
 const MessageHistory = require("../models/messageHistory.model");
 const { applyAcceptedDeliveryToHistory } = require("../utils/messageDeliveryState");
@@ -80,9 +81,17 @@ async function processJob(job) {
         // ---- Success ----
         applyAcceptedDeliveryToHistory({ history, delivery, message });
         await history.save();
+        try {
+            await waitForProviderStatusSync(history);
+        } catch (syncError) {
+            console.warn(
+                `[WhatsApp Worker] Provider status sync skipped for ${history._id}: ${syncError.message}`
+            );
+        }
 
         return {
-            success: true,
+            success: history.status !== "failed",
+            status: history.status,
             messageId: delivery.messageId,
             provider: delivery.provider,
         };

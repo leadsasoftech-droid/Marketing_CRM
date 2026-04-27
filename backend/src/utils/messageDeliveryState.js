@@ -1,3 +1,5 @@
+const env = require("../config/env");
+
 function isResponseEnvelope(value) {
   return Boolean(
     value &&
@@ -28,6 +30,13 @@ function mergeMetaResponse(metaResponse, patch) {
   };
 }
 
+function shouldAwaitProviderConfirmation(delivery) {
+  return Boolean(
+    delivery?.mode === "live" &&
+      delivery?.messageId,
+  );
+}
+
 function applyAcceptedDeliveryToHistory({ history, delivery, message }) {
   history.metaMessageId = delivery.messageId || "";
   history.metaResponse = mergeMetaResponse(history.metaResponse, {
@@ -39,7 +48,7 @@ function applyAcceptedDeliveryToHistory({ history, delivery, message }) {
     history.message = `[Template: ${delivery.templateName}]`;
   }
 
-  if (delivery.mode === "mock") {
+  if (delivery.mode === "mock" || !shouldAwaitProviderConfirmation(delivery)) {
     history.status = "sent";
     history.sentAt = new Date();
     return;
@@ -62,6 +71,10 @@ function parseWebhookTimestamp(status) {
 }
 
 function extractWebhookErrorMessage(status) {
+  if (status?.status_description) {
+    return String(status.status_description).trim();
+  }
+
   if (!Array.isArray(status?.errors)) {
     return "Delivery failed through Meta API. Message rejected or undeliverable.";
   }
@@ -97,9 +110,9 @@ function applyWebhookStatusToHistory({ history, status }) {
 }
 
 function getDeliverySuccessMessage(delivery) {
-  return delivery.mode === "mock"
-    ? "Message sent successfully."
-    : "Message accepted by provider. Awaiting delivery confirmation.";
+  return shouldAwaitProviderConfirmation(delivery)
+    ? "Message is processing. Status will update shortly."
+    : "Message sent successfully.";
 }
 
 module.exports = {

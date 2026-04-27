@@ -4,9 +4,28 @@ const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/apiError");
 const generateAccessId = require("../utils/generateAccessId");
 const signToken = require("../utils/signToken");
+const ensureDefaultSuperAdmin = require("../services/bootstrap.service");
 
 function serializeUser(user) {
   return user.toJSON();
+}
+
+async function findUserForLogin(identifier) {
+  return User.findOne({
+    $or: [
+      { email: identifier.toLowerCase() },
+      { crmAccessId: identifier.toUpperCase() },
+    ],
+  }).select("+password");
+}
+
+function isDefaultSuperAdminIdentifier(identifier) {
+  const normalizedIdentifier = String(identifier).trim();
+
+  return (
+    normalizedIdentifier.toLowerCase() === env.defaultSuperAdminEmail ||
+    normalizedIdentifier.toUpperCase() === "SUPERADMIN"
+  );
 }
 
 async function buildUniqueAccessId(preferredAccessId, currentUserId = null) {
@@ -95,12 +114,12 @@ const signup = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
   const identifier = String(req.body.identifier).trim();
-  const user = await User.findOne({
-    $or: [
-      { email: identifier.toLowerCase() },
-      { crmAccessId: identifier.toUpperCase() },
-    ],
-  }).select("+password");
+  let user = await findUserForLogin(identifier);
+
+  if (!user && isDefaultSuperAdminIdentifier(identifier)) {
+    await ensureDefaultSuperAdmin();
+    user = await findUserForLogin(identifier);
+  }
 
   if (!user || !user.isActive) {
     throw new ApiError(401, "Invalid login credentials.");

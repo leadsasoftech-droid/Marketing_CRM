@@ -38,17 +38,27 @@ export async function request(path, options = {}) {
   } = options;
   const isFormData = body instanceof FormData;
 
-  const response = await fetch(buildUrl(path), {
-    method,
-    headers: {
-      ...(isFormData ? {} : body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body:
-      body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
-    ...restOptions,
-  });
+  let response;
+
+  try {
+    response = await fetch(buildUrl(path), {
+      method,
+      headers: {
+        ...(isFormData ? {} : body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+      body:
+        body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
+      ...restOptions,
+    });
+  } catch (error) {
+    const normalizedError = new Error(
+      "Unable to reach the CRM server right now. Please check the backend connection and try again.",
+    );
+    normalizedError.cause = error;
+    throw normalizedError;
+  }
 
   const payload = await response.json().catch(() => ({}));
 
@@ -129,11 +139,24 @@ export const messageApi = {
   getHistory(params, token) {
     return request(`/api/messages/history${toQueryString(params)}`, { token });
   },
+  getHistoryById(historyId, token) {
+    return request(`/api/messages/history/${historyId}`, { token });
+  },
 };
 
 export const providerApi = {
   getWalletBalance(token) {
     return request("/api/provider/fast2sms/wallet", { token });
+  },
+  getWhatsappWebhook(token) {
+    return request("/api/provider/fast2sms/webhook", { token });
+  },
+  syncWhatsappWebhook(payload, token) {
+    return request("/api/provider/fast2sms/webhook", {
+      method: "POST",
+      body: payload,
+      token,
+    });
   },
   getBlockedUsers(token) {
     return request("/api/provider/fast2sms/block", { token });

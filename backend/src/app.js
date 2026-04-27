@@ -11,6 +11,8 @@ const routes = require("./routes");
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

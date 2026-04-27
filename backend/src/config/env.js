@@ -32,6 +32,11 @@ const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: parseInteger(process.env.PORT, 5000),
   mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/whatsapp-crm",
+  backendPublicUrl: (
+    process.env.BACKEND_PUBLIC_URL || process.env.PUBLIC_API_URL || ""
+  )
+    .trim()
+    .replace(/\/+$/, ""),
   jwtSecret: process.env.JWT_SECRET || "change-me-in-production",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   bodyLimit: process.env.BODY_LIMIT || "1mb",
@@ -55,6 +60,11 @@ const env = {
   fast2smsDefaultTemplate: process.env.FAST2SMS_DEFAULT_TEMPLATE || "",
   fast2smsDefaultTemplateLang: process.env.FAST2SMS_DEFAULT_TEMPLATE_LANG || "en",
   fast2smsTemplateHeaderVideoUrl: process.env.FAST2SMS_TEMPLATE_HEADER_VIDEO_URL || "",
+  fast2smsWebhookAutoSync: parseBoolean(process.env.FAST2SMS_WEBHOOK_AUTO_SYNC, true),
+  whatsappWebhookVerifyToken:
+    process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
+    process.env.FAST2SMS_WEBHOOK_VERIFY_TOKEN ||
+    "",
   redisHost: process.env.REDIS_HOST || "127.0.0.1",
   redisPort: parseInteger(process.env.REDIS_PORT, 6379),
   defaultSuperAdminName: process.env.DEFAULT_SUPER_ADMIN_NAME || "Super Admin",

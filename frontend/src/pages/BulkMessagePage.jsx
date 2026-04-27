@@ -6,6 +6,10 @@ import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
 
+function normalizeDisplayStatus(status) {
+    return status === "pending" ? "processing" : status;
+}
+
 function getQueuedCount(result) {
     if (!result) {
         return 0;
@@ -20,17 +24,31 @@ function getQueuedCount(result) {
         : 0;
 }
 
-function getPendingCount(result) {
+function getSentCount(result) {
+    if (!result) {
+        return 0;
+    }
+
+    if (typeof result.sentCount === "number") {
+        return Number(result.sentCount || 0);
+    }
+
+    return Array.isArray(result.resultsPreview)
+        ? result.resultsPreview.filter((entry) => normalizeDisplayStatus(entry.status) === "sent").length
+        : 0;
+}
+
+function getProcessingCount(result) {
     if (!result) {
         return 0;
     }
 
     if (typeof result.pendingCount === "number") {
-        return result.pendingCount;
+        return Number(result.pendingCount || 0);
     }
 
     return Array.isArray(result.resultsPreview)
-        ? result.resultsPreview.filter((entry) => entry.status === "pending").length
+        ? result.resultsPreview.filter((entry) => normalizeDisplayStatus(entry.status) === "processing").length
         : 0;
 }
 
@@ -42,11 +60,11 @@ function getPrimaryMetric(result) {
         };
     }
 
-    const pendingCount = getPendingCount(result);
-    if (pendingCount > 0) {
+    const processingCount = getProcessingCount(result);
+    if (processingCount > 0) {
         return {
-            label: "Awaiting Confirmation",
-            value: pendingCount,
+            label: "Processing",
+            value: processingCount,
         };
     }
 
@@ -60,7 +78,7 @@ function getPrimaryMetric(result) {
 
     return {
         label: "Sent",
-        value: Number(result.sentCount || 0),
+        value: getSentCount(result),
     };
 }
 
@@ -303,30 +321,34 @@ export default function BulkMessagePage() {
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm text-on-surface divide-y divide-outline-variant">
-                                        {result.resultsPreview.map((entry) => (
-                                            <tr key={`${entry.rowNumber}-${entry.phoneNumber}`}>
-                                                <td className="py-4 px-6">{entry.rowNumber}</td>
-                                                <td className="py-4 px-6">{entry.recipientName || "Unnamed recipient"}</td>
-                                                <td className="py-4 px-6">{entry.phoneNumber}</td>
-                                                <td className="py-4 px-6">
-                                                    <span
-                                                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${entry.status === "sent"
-                                                            ? "bg-secondary/10 text-secondary"
-                                                            : entry.status === "pending"
-                                                                ? "bg-amber-100 text-amber-800"
-                                                            : entry.status === "queued"
-                                                                ? "bg-primary/10 text-primary"
-                                                            : "bg-error-container text-error"
-                                                            }`}
-                                                    >
-                                                        {entry.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 px-6 break-all">
-                                                    {entry.messageId || entry.error || entry.historyId}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {result.resultsPreview.map((entry) => {
+                                            const displayStatus = normalizeDisplayStatus(entry.status);
+
+                                            return (
+                                                <tr key={`${entry.rowNumber}-${entry.phoneNumber}`}>
+                                                    <td className="py-4 px-6">{entry.rowNumber}</td>
+                                                    <td className="py-4 px-6">{entry.recipientName || "Unnamed recipient"}</td>
+                                                    <td className="py-4 px-6">{entry.phoneNumber}</td>
+                                                    <td className="py-4 px-6">
+                                                        <span
+                                                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${displayStatus === "sent"
+                                                                ? "bg-secondary/10 text-secondary"
+                                                                : displayStatus === "processing"
+                                                                    ? "bg-amber-100 text-amber-800"
+                                                                : displayStatus === "queued"
+                                                                    ? "bg-primary/10 text-primary"
+                                                                    : "bg-error-container text-error"
+                                                                }`}
+                                                        >
+                                                            {displayStatus}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6 break-all">
+                                                        {entry.messageId || entry.error || entry.historyId}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

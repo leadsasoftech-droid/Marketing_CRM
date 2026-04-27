@@ -4,6 +4,11 @@ const env = require("../config/env");
 const MessageHistory = require("../models/messageHistory.model");
 const { parseContactsFile } = require("../services/bulkUpload.service");
 const { enqueueMessage, getWhatsappQueue } = require("../queues/whatsapp.queue");
+const {
+  syncHistoryDocumentsWithProvider,
+  syncRecentProviderStatuses,
+  waitForProviderStatusSync,
+} = require("../services/providerStatusSync.service");
 const { sendTextMessage } = require("../services/whatsapp.service");
 const {
   applyAcceptedDeliveryToHistory,
@@ -17,15 +22,46 @@ function isDirectDispatchMode() {
   return env.messageDispatchMode === "direct";
 }
 
+function extractWebhookStatuses(payload) {
+  const statuses = [];
+  const directStatusCollections = [
+    payload?.statuses,
+    payload?.data?.statuses,
+    payload?.value?.statuses,
+    payload?.webhook?.statuses,
+  ];
+
+  for (const collection of directStatusCollections) {
+    if (Array.isArray(collection)) {
+      statuses.push(...collection.filter(Boolean));
+    }
+  }
+
+  if (Array.isArray(payload?.entry)) {
+    for (const entry of payload.entry) {
+      for (const change of entry?.changes || []) {
+        if (Array.isArray(change?.value?.statuses)) {
+          statuses.push(...change.value.statuses.filter(Boolean));
+        }
+      }
+    }
+  }
+
+  return statuses;
+}
+
+function extractWebhookMessageId(status) {
+  return status?.id || status?.message_id || status?.meta_msg_id || status?.request_id || null;
+}
+
 function buildDirectBulkResponseMessage({ sentCount, pendingCount, failedCount }) {
   const parts = [];
-
   if (sentCount > 0) {
     parts.push(`${sentCount} sent`);
   }
 
   if (pendingCount > 0) {
-    parts.push(`${pendingCount} accepted by provider`);
+    parts.push(`${pendingCount} processing`);
   }
 
   if (failedCount > 0 || parts.length === 0) {
@@ -49,6 +85,11 @@ async function deliverMessageImmediately({ history, to, message }) {
 
     applyAcceptedDeliveryToHistory({ history, delivery, message });
     await history.save();
+    try {
+      await waitForProviderStatusSync(history);
+    } catch (syncError) {
+      console.warn(`Provider status sync skipped for ${history._id}: ${syncError.message}`);
+    }
 
     return {
       history,
@@ -80,7 +121,7 @@ const sendSingleMessage = asyncHandler(async (req, res) => {
     phoneNumber: targetPhoneNumber,
     message: messageText || "[Template message]",
     source: "manual",
-    status: isDirectDispatchMode() ? "pending" : "queued",
+    status: "queued",
   });
 
   if (isDirectDispatchMode()) {
@@ -90,9 +131,16 @@ const sendSingleMessage = asyncHandler(async (req, res) => {
       message: messageText || undefined,
     });
 
+    if (result.history.status === "failed") {
+      throw new ApiError(502, result.history.errorMessage || "Message delivery failed.");
+    }
+
     res.status(200).json({
       success: true,
-      message: getDeliverySuccessMessage(result.delivery),
+      message:
+        result.history.status === "sent"
+          ? "Message sent successfully."
+          : getDeliverySuccessMessage(result.delivery),
       data: result,
     });
     return;
@@ -154,7 +202,7 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
       phoneNumber: recipient.normalizedPhoneNumber,
       message: messageText || "[Template message]",
       source: "bulk",
-      status: isDirectDispatchMode() ? "pending" : "queued",
+      status: "queued",
     });
 
     if (isDirectDispatchMode()) {
@@ -165,7 +213,9 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
           message: messageText || undefined,
         });
 
-        if (deliveredHistory.status === "sent") {
+        if (deliveredHistory.status === "failed") {
+          failedCount += 1;
+        } else if (deliveredHistory.status === "sent") {
           sentCount += 1;
         } else if (deliveredHistory.status === "pending") {
           pendingCount += 1;
@@ -178,6 +228,7 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
           status: deliveredHistory.status,
           historyId: deliveredHistory._id,
           messageId: delivery.messageId,
+          error: deliveredHistory.status === "failed" ? deliveredHistory.errorMessage : undefined,
         });
       } catch (error) {
         failedCount += 1;
@@ -250,6 +301,14 @@ const getMessageHistory = asyncHandler(async (req, res) => {
     filter.owner = req.user._id;
   }
 
+  try {
+    await syncRecentProviderStatuses({
+      ownerId: filter.owner || null,
+    });
+  } catch (syncError) {
+    console.warn(`Recent provider sync skipped: ${syncError.message}`);
+  }
+
   if (req.query.status) {
     filter.status = req.query.status;
   }
@@ -309,6 +368,12 @@ const getMessageHistoryById = asyncHandler(async (req, res) => {
 
   if (!history) {
     throw new ApiError(404, "Message history entry not found.");
+  }
+
+  try {
+    await syncHistoryDocumentsWithProvider([history]);
+  } catch (syncError) {
+    console.warn(`Provider sync skipped for history ${history._id}: ${syncError.message}`);
   }
 
   res.status(200).json({
@@ -400,37 +465,48 @@ const clearQueuedMessages = asyncHandler(async (req, res) => {
   });
 });
 
+const verifyDeliveryWebhook = asyncHandler(async (req, res) => {
+  const mode = String(req.query["hub.mode"] || "").trim();
+  const token = String(req.query["hub.verify_token"] || "").trim();
+  const challenge = String(req.query["hub.challenge"] || "").trim();
+
+  if (!challenge) {
+    throw new ApiError(400, "Webhook challenge is missing.");
+  }
+
+  if (mode && mode !== "subscribe") {
+    throw new ApiError(400, "Unsupported webhook verification mode.");
+  }
+
+  if (env.whatsappWebhookVerifyToken && token !== env.whatsappWebhookVerifyToken) {
+    throw new ApiError(403, "Webhook verification token is invalid.");
+  }
+
+  res.status(200).send(challenge);
+});
+
 // -------------------------------------------------------------------------
 // Webhook for Fast2SMS / Meta Delivery status updates
 // Receives async status updates so "sent" can transition to "delivered" or "failed"
 // -------------------------------------------------------------------------
 const handleDeliveryWebhook = asyncHandler(async (req, res) => {
-  // Fast2SMS/Meta sends status updates here
   const payload = req.body;
+  const statuses = extractWebhookStatuses(payload);
 
   try {
-    // Basic Meta Webhook Payload Format Structure Handling
-    // Expected structure has entry -> changes -> value -> statuses -> [status objects]
-    if (payload.entry && payload.entry.length > 0) {
-      for (const entry of payload.entry) {
-        if (entry.changes && entry.changes.length > 0) {
-          for (const change of entry.changes) {
-            if (change.value && change.value.statuses) {
-              for (const status of change.value.statuses) {
-                const messageId = status.id;
-                const messageStatus = status.status; // e.g., 'delivered', 'read', 'failed'
+    for (const status of statuses) {
+      const messageId = extractWebhookMessageId(status);
+      if (!messageId) {
+        continue;
+      }
 
-                // Find the history entry by metaMessageId
-                const history = await MessageHistory.findOne({ metaMessageId: messageId });
-                if (history) {
-                  if (applyWebhookStatusToHistory({ history, status })) {
-                    await history.save();
-                  }
-                }
-              }
-            }
-          }
-        }
+      const history = await MessageHistory.findOne({ metaMessageId: messageId });
+      if (!history) {
+        continue;
+      }
+
+      if (applyWebhookStatusToHistory({ history, status })) {
+        await history.save();
       }
     }
   } catch (error) {
@@ -445,6 +521,7 @@ module.exports = {
   clearQueuedMessages,
   getMessageHistory,
   getMessageHistoryById,
+  verifyDeliveryWebhook,
   sendBulkMessages,
   sendSingleMessage,
   handleDeliveryWebhook,

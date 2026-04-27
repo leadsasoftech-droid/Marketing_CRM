@@ -43,10 +43,14 @@ function getStatusStyles(status) {
     }
 
     if (status === "pending") {
-        return "bg-primary/10 text-primary";
+        return "bg-amber-100 text-amber-800";
     }
 
     return "bg-primary/10 text-primary";
+}
+
+function normalizeDisplayStatus(status) {
+    return status === "pending" ? "processing" : status;
 }
 
 function buildPaginationItems(currentPage, totalPages) {
@@ -251,7 +255,7 @@ export default function SentHistoryPage() {
                         >
                             <option value="">All Statuses</option>
                             <option value="queued">Queued</option>
-                            <option value="pending">Pending</option>
+                            <option value="pending">Processing</option>
                             <option value="sent">Sent</option>
                             <option value="failed">Failed</option>
                         </select>
@@ -404,6 +408,7 @@ export default function SentHistoryPage() {
                                 </tr>
                             ) : (
                                 history.map((entry) => {
+                                    const displayStatus = normalizeDisplayStatus(entry.status);
                                     const { date, time } = formatDateParts(entry.sentAt || entry.createdAt);
 
                                     return (
@@ -447,8 +452,8 @@ export default function SentHistoryPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 align-top">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusStyles(entry.status)}`}>
-                                                    {entry.status}
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusStyles(displayStatus)}`}>
+                                                    {displayStatus}
                                                 </span>
                                             </td>
                                         </tr>

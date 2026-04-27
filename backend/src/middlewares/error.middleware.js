@@ -25,6 +25,10 @@ function errorHandler(error, _req, res, _next) {
 
   const statusCode = normalizedError.statusCode || 500;
 
+  if (statusCode >= 500) {
+    console.error("[CRM Error]", normalizedError);
+  }
+
   res.status(statusCode).json({
     success: false,
     message: normalizedError.message || "Something went wrong.",

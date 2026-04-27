@@ -35,6 +35,10 @@ function formatDateTime(value) {
     }).format(new Date(value));
 }
 
+function normalizeDisplayStatus(status) {
+    return status === "pending" ? "processing" : status;
+}
+
 export default function DashboardPage() {
     const { token } = useAuth();
     const [overview, setOverview] = useState({
@@ -238,35 +242,39 @@ export default function DashboardPage() {
                                 No message activity has been recorded yet.
                             </div>
                         ) : (
-                            overview.recent.slice(0, 5).map((entry) => (
-                                <div key={entry._id} className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm font-semibold text-on-surface">
-                                            {entry.recipientName || "Unnamed recipient"} ({entry.phoneNumber})
-                                        </p>
-                                        <p className="text-sm text-on-surface-variant line-clamp-2 mt-1">
-                                            {entry.message}
-                                        </p>
+                            overview.recent.slice(0, 5).map((entry) => {
+                                const displayStatus = normalizeDisplayStatus(entry.status);
+
+                                return (
+                                    <div key={entry._id} className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-semibold text-on-surface">
+                                                {entry.recipientName || "Unnamed recipient"} ({entry.phoneNumber})
+                                            </p>
+                                            <p className="text-sm text-on-surface-variant line-clamp-2 mt-1">
+                                                {entry.message}
+                                            </p>
+                                        </div>
+                                        <div className="sm:text-right">
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${displayStatus === "sent"
+                                                    ? "bg-secondary/10 text-secondary"
+                                                    : displayStatus === "failed"
+                                                        ? "bg-error-container text-error"
+                                                        : displayStatus === "processing"
+                                                            ? "bg-amber-100 text-amber-800"
+                                                            : "text-[#b45309]"
+                                                    }`}
+                                            >
+                                                {displayStatus}
+                                            </span>
+                                            <p className="text-xs text-on-surface-variant mt-2">
+                                                {formatDateTime(entry.sentAt || entry.createdAt)}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="sm:text-right">
-                                        <span
-                                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${entry.status === "sent"
-                                                ? "bg-secondary/10 text-secondary"
-                                                : entry.status === "failed"
-                                                    ? "bg-error-container text-error"
-                                                    : entry.status === "queued"
-                                                        ? "text-[#b45309]"
-                                                        : "bg-primary/10 text-primary"
-                                                }`}
-                                        >
-                                            {entry.status}
-                                        </span>
-                                        <p className="text-xs text-on-surface-variant mt-2">
-                                            {formatDateTime(entry.sentAt || entry.createdAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </section>
@@ -286,7 +294,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="rounded-xl border border-outline-variant bg-surface p-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-on-surface-variant">
-                                Awaiting Confirmation
+                                Processing
                             </p>
                             <p className="text-[24px] font-semibold text-on-surface mt-2">
                                 {overview.pending}

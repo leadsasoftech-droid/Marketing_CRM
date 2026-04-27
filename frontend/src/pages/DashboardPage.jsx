@@ -140,9 +140,6 @@ export default function DashboardPage() {
                                 <option>Last 1 month</option>
                                 <option>Total Range</option>
                             </select>
-                            <button className="border border-outline-variant bg-surface rounded px-4 py-1.5 hover:bg-surface-variant transition-colors text-on-surface">
-                                Search
-                            </button>
                         </div>
 
                         <div className="h-[300px] w-full">

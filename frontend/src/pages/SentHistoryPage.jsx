@@ -72,6 +72,14 @@ function buildPaginationItems(currentPage, totalPages) {
 
 const pageSizeOptions = [10, 20, 50];
 
+function MetricValueSkeleton() {
+    return <div className="h-9 w-20 rounded bg-surface-variant animate-pulse" />;
+}
+
+function MetricTextSkeleton({ widthClass = "w-36" }) {
+    return <div className={`h-4 rounded bg-surface-variant/70 animate-pulse ${widthClass}`} />;
+}
+
 export default function SentHistoryPage() {
     const { token } = useAuth();
     const [status, setStatus] = useState("");
@@ -267,14 +275,24 @@ export default function SentHistoryPage() {
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Total Records</p>
-                            <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
-                                {totalRecords}
-                            </h3>
+                            {isLoading ? (
+                                <div className="mt-2">
+                                    <MetricValueSkeleton />
+                                </div>
+                            ) : (
+                                <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
+                                    {totalRecords}
+                                </h3>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center text-on-surface-variant text-sm">
                         <span className="material-symbols-outlined text-sm mr-1">stacked_bar_chart</span>
-                        <span>{pageRecordStart > 0 ? `Showing ${pageRecordStart}-${pageRecordEnd}` : "No records on this page"}</span>
+                        {isLoading ? (
+                            <MetricTextSkeleton widthClass="w-32" />
+                        ) : (
+                            <span>{pageRecordStart > 0 ? `Showing ${pageRecordStart}-${pageRecordEnd}` : "No records on this page"}</span>
+                        )}
                     </div>
                 </div>
 
@@ -285,14 +303,24 @@ export default function SentHistoryPage() {
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Sent On This Page</p>
-                            <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
-                                {sentCount}
-                            </h3>
+                            {isLoading ? (
+                                <div className="mt-2">
+                                    <MetricValueSkeleton />
+                                </div>
+                            ) : (
+                                <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
+                                    {sentCount}
+                                </h3>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center text-on-surface-variant text-sm">
                         <span className="material-symbols-outlined text-sm mr-1">page_info</span>
-                        <span>Page {pagination.page} of {totalPages}</span>
+                        {isLoading ? (
+                            <MetricTextSkeleton widthClass="w-28" />
+                        ) : (
+                            <span>Page {pagination.page} of {totalPages}</span>
+                        )}
                     </div>
                 </div>
 
@@ -303,14 +331,24 @@ export default function SentHistoryPage() {
                         </div>
                         <div>
                             <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Failed On This Page</p>
-                            <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
-                                {failedCount}
-                            </h3>
+                            {isLoading ? (
+                                <div className="mt-2">
+                                    <MetricValueSkeleton />
+                                </div>
+                            ) : (
+                                <h3 className="text-[24px] font-semibold text-on-surface leading-8" style={{ letterSpacing: "-0.01em" }}>
+                                    {failedCount}
+                                </h3>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center text-error text-sm">
                         <span className="material-symbols-outlined text-sm mr-1">warning</span>
-                        <span>Failures need follow-up</span>
+                        {isLoading ? (
+                            <MetricTextSkeleton widthClass="w-36" />
+                        ) : (
+                            <span>Failures need follow-up</span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -420,11 +458,15 @@ export default function SentHistoryPage() {
                 <div className="border-t border-surface-variant bg-surface px-4 py-4 sm:px-6">
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                            <div className="text-sm text-on-surface-variant">
-                                {pageRecordStart > 0
-                                    ? `Showing ${pageRecordStart}-${pageRecordEnd} of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`
-                                    : `Showing 0 of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`}
-                            </div>
+                            {isLoading ? (
+                                <div className="h-4 w-64 rounded bg-surface-variant/70 animate-pulse" />
+                            ) : (
+                                <div className="text-sm text-on-surface-variant">
+                                    {pageRecordStart > 0
+                                        ? `Showing ${pageRecordStart}-${pageRecordEnd} of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`
+                                        : `Showing 0 of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`}
+                                </div>
+                            )}
                             <div className="flex items-center gap-2 text-sm">
                                 <span className="text-on-surface-variant">Rows per page</span>
                                 <div className="relative">
@@ -451,63 +493,82 @@ export default function SentHistoryPage() {
                         </div>
 
                         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handlePageChange(pagination.page - 1)}
-                                    disabled={pagination.page <= 1 || isLoading}
-                                    className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    Previous
-                                </button>
-                                {paginationItems.map((item) => (
-                                    typeof item === "number" ? (
+                            {isLoading ? (
+                                <>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="h-10 w-20 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-10 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-10 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-10 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-16 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="h-4 w-24 rounded bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-24 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                        <div className="h-10 w-14 rounded-lg bg-surface-variant/70 animate-pulse" />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <button
-                                            key={item}
                                             type="button"
-                                            onClick={() => handlePageChange(item)}
-                                            disabled={isLoading}
-                                            className={`min-w-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${item === pagination.page
-                                                ? "bg-primary text-on-primary"
-                                                : "border border-outline-variant text-on-surface hover:bg-surface-container-low"
-                                                } disabled:cursor-not-allowed disabled:opacity-50`}
+                                            onClick={() => handlePageChange(pagination.page - 1)}
+                                            disabled={pagination.page <= 1 || isLoading}
+                                            className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            {item}
+                                            Previous
                                         </button>
-                                    ) : (
-                                        <span key={item} className="px-1 text-on-surface-variant">
-                                            ...
-                                        </span>
-                                    )
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => handlePageChange(pagination.page + 1)}
-                                    disabled={pagination.page >= totalPages || isLoading}
-                                    className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
+                                        {paginationItems.map((item) => (
+                                            typeof item === "number" ? (
+                                                <button
+                                                    key={item}
+                                                    type="button"
+                                                    onClick={() => handlePageChange(item)}
+                                                    disabled={isLoading}
+                                                    className={`min-w-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${item === pagination.page
+                                                        ? "bg-primary text-on-primary"
+                                                        : "border border-outline-variant text-on-surface hover:bg-surface-container-low"
+                                                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                                                >
+                                                    {item}
+                                                </button>
+                                            ) : (
+                                                <span key={item} className="px-1 text-on-surface-variant">
+                                                    ...
+                                                </span>
+                                            )
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePageChange(pagination.page + 1)}
+                                            disabled={pagination.page >= totalPages || isLoading}
+                                            className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
 
-                            <form onSubmit={handlePageJumpSubmit} className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm text-on-surface-variant">Jump to page</span>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max={totalPages}
-                                    value={pageJumpInput}
-                                    onChange={(event) => setPageJumpInput(event.target.value)}
-                                    className="w-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-on-secondary transition-colors hover:bg-on-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    Go
-                                </button>
-                            </form>
+                                    <form onSubmit={handlePageJumpSubmit} className="flex flex-wrap items-center gap-2">
+                                        <span className="text-sm text-on-surface-variant">Jump to page</span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max={totalPages}
+                                            value={pageJumpInput}
+                                            onChange={(event) => setPageJumpInput(event.target.value)}
+                                            className="w-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-on-secondary transition-colors hover:bg-on-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            Go
+                                        </button>
+                                    </form>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

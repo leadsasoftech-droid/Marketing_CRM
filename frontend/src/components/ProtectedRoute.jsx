@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import SessionLoader from "./SessionLoader";
 
 export default function ProtectedRoute({ allowedRoles }) {
   const location = useLocation();
@@ -7,11 +8,10 @@ export default function ProtectedRoute({ allowedRoles }) {
 
   if (hasToken && isBootstrapping) {
     return (
-      <div className="min-h-screen bg-surface-container-low flex items-center justify-center p-6">
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl px-6 py-5 shadow-sm">
-          <p className="text-sm text-on-surface">Checking your CRM session...</p>
-        </div>
-      </div>
+      <SessionLoader
+        title="Checking your CRM session..."
+        subtitle="Verifying your account and loading the dashboard."
+      />
     );
   }
 

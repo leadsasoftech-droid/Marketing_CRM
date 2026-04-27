@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
+import SessionLoader from "../components/SessionLoader";
 // eslint-disable-next-line no-unused-vars
 import { motion, useMotionValue, useTransform } from "framer-motion";
 
@@ -210,11 +211,10 @@ export default function LoginPage() {
 
     if (hasToken && isBootstrapping) {
         return (
-            <div className="bg-surface-container-low min-h-screen flex items-center justify-center p-6 font-sans">
-                <div className="bg-surface-container-lowest border border-outline-variant rounded-xl px-6 py-5 shadow-sm">
-                    <p className="text-sm text-on-surface">Restoring your CRM session...</p>
-                </div>
-            </div>
+            <SessionLoader
+                title="Restoring your CRM session..."
+                subtitle="We are signing you back in and preparing your workspace."
+            />
         );
     }
 

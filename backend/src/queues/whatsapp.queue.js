@@ -16,23 +16,31 @@ const { redisOptions } = require("../config/redis");
 
 const QUEUE_NAME = "whatsapp-send";
 
-const whatsappQueue = new Queue(QUEUE_NAME, {
-    connection: redisOptions,
-    defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-            type: "exponential",
-            delay: 10000, // 10 s base delay
-        },
-        removeOnComplete: {
-            age: 86400, // keep completed jobs for 24 h
-            count: 500,
-        },
-        removeOnFail: {
-            age: 604800, // keep failed jobs for 7 days
-        },
-    },
-});
+let whatsappQueue = null;
+
+function getWhatsappQueue() {
+    if (!whatsappQueue) {
+        whatsappQueue = new Queue(QUEUE_NAME, {
+            connection: redisOptions,
+            defaultJobOptions: {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 10000, // 10 s base delay
+                },
+                removeOnComplete: {
+                    age: 86400, // keep completed jobs for 24 h
+                    count: 500,
+                },
+                removeOnFail: {
+                    age: 604800, // keep failed jobs for 7 days
+                },
+            },
+        });
+    }
+
+    return whatsappQueue;
+}
 
 /**
  * Add a single WhatsApp message job to the queue.
@@ -41,7 +49,7 @@ const whatsappQueue = new Queue(QUEUE_NAME, {
  * @returns {Promise<import("bullmq").Job>}
  */
 async function enqueueMessage(data) {
-    return whatsappQueue.add("send-message", data, {
+    return getWhatsappQueue().add("send-message", data, {
         // Deduplicate by historyId — prevents the same message from being
         // queued twice (e.g. on accidental double-click that gets past
         // the frontend ref guard).
@@ -51,6 +59,6 @@ async function enqueueMessage(data) {
 
 module.exports = {
     QUEUE_NAME,
-    whatsappQueue,
+    getWhatsappQueue,
     enqueueMessage,
 };

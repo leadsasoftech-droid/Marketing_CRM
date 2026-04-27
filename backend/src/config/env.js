@@ -9,6 +9,14 @@ function parseInteger(value, fallback) {
   return Number.isNaN(parsed) ? fallback : parsed;
 }
 
+function parseBoolean(value, fallback = false) {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return value === "true";
+}
+
 function parseList(value, fallback = []) {
   if (!value) {
     return fallback;
@@ -31,9 +39,13 @@ const env = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
   ]),
-  allowPublicSignup: process.env.ALLOW_PUBLIC_SIGNUP === "true",
+  corsAllowVercelOrigins: parseBoolean(process.env.CORS_ALLOW_VERCEL_ORIGINS, false),
+  allowPublicSignup: parseBoolean(process.env.ALLOW_PUBLIC_SIGNUP, false),
   uploadMaxFileSizeMb: parseInteger(process.env.UPLOAD_MAX_FILE_SIZE_MB, 5),
   bulkSendConcurrency: parseInteger(process.env.BULK_SEND_CONCURRENCY, 5),
+  messageDispatchMode:
+    (process.env.MESSAGE_DISPATCH_MODE || (process.env.VERCEL ? "direct" : "queue")).toLowerCase(),
+  directBulkMaxRecipients: parseInteger(process.env.DIRECT_BULK_MAX_RECIPIENTS, 25),
   defaultCountryCode: (process.env.DEFAULT_COUNTRY_CODE || "91").replace(/\D/g, ""),
   whatsappApiMode: process.env.WHATSAPP_API_MODE || "mock",
   whatsappProvider: (process.env.WHATSAPP_PROVIDER || "fast2sms").toLowerCase(),
@@ -56,6 +68,10 @@ const env = {
 
 if (env.nodeEnv === "production" && env.jwtSecret === "change-me-in-production") {
   throw new Error("JWT_SECRET must be configured in production.");
+}
+
+if (!["queue", "direct"].includes(env.messageDispatchMode)) {
+  throw new Error("MESSAGE_DISPATCH_MODE must be either 'queue' or 'direct'.");
 }
 
 module.exports = env;

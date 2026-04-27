@@ -11,9 +11,42 @@ const routes = require("./routes");
 
 const app = express();
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function matchesOriginPattern(origin, pattern) {
+  if (pattern === "*") {
+    return true;
+  }
+
+  if (!pattern.includes("*")) {
+    return pattern === origin;
+  }
+
+  const regexPattern = `^${pattern.split("*").map(escapeRegex).join(".*")}$`;
+  return new RegExp(regexPattern, "i").test(origin);
+}
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  if (env.corsOrigins.some((pattern) => matchesOriginPattern(origin, pattern))) {
+    return true;
+  }
+
+  if (env.corsAllowVercelOrigins && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  return false;
+}
+
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || env.corsOrigins.includes("*") || env.corsOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
@@ -21,6 +54,7 @@ const corsOptions = {
     callback(null, false);
   },
   credentials: true,
+  optionsSuccessStatus: 204,
 };
 
 app.disable("x-powered-by");

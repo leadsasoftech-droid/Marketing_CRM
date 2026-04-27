@@ -4,8 +4,42 @@ const env = require("../config/env");
 const MessageHistory = require("../models/messageHistory.model");
 const { parseContactsFile } = require("../services/bulkUpload.service");
 const { enqueueMessage } = require("../queues/whatsapp.queue");
+const { sendTextMessage } = require("../services/whatsapp.service");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/apiError");
+
+function isDirectDispatchMode() {
+  return env.messageDispatchMode === "direct";
+}
+
+async function deliverMessageImmediately({ history, to, message }) {
+  try {
+    const delivery = await sendTextMessage({ to, message });
+
+    history.status = "sent";
+    history.metaMessageId = delivery.messageId;
+    history.metaResponse = delivery.raw;
+    history.errorMessage = "";
+    history.sentAt = new Date();
+
+    if (delivery.templateName && !message) {
+      history.message = `[Template: ${delivery.templateName}]`;
+    }
+
+    await history.save();
+
+    return {
+      history,
+      delivery,
+    };
+  } catch (error) {
+    history.status = "failed";
+    history.errorMessage = error.message;
+    history.metaResponse = error.metaResponse || null;
+    await history.save();
+    throw error;
+  }
+}
 
 // -------------------------------------------------------------------------
 // Send a single WhatsApp message
@@ -24,8 +58,23 @@ const sendSingleMessage = asyncHandler(async (req, res) => {
     phoneNumber: targetPhoneNumber,
     message: messageText || "[Template message]",
     source: "manual",
-    status: "queued",
+    status: isDirectDispatchMode() ? "pending" : "queued",
   });
+
+  if (isDirectDispatchMode()) {
+    const result = await deliverMessageImmediately({
+      history,
+      to: targetPhoneNumber,
+      message: messageText || undefined,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Message sent successfully.",
+      data: result,
+    });
+    return;
+  }
 
   const job = await enqueueMessage({
     historyId: history._id.toString(),
@@ -63,7 +112,16 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
   const messageText = req.body.message || "";
   const batchId = new mongoose.Types.ObjectId().toString();
 
+  if (isDirectDispatchMode() && parsedFile.recipients.length > env.directBulkMaxRecipients) {
+    throw new ApiError(
+      503,
+      `Bulk sends on this deployment are limited to ${env.directBulkMaxRecipients} recipients per upload.`,
+    );
+  }
+
   const results = [];
+  let sentCount = 0;
+  let failedCount = 0;
 
   for (const recipient of parsedFile.recipients) {
     const history = await MessageHistory.create({
@@ -73,8 +131,40 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
       phoneNumber: recipient.normalizedPhoneNumber,
       message: messageText || "[Template message]",
       source: "bulk",
-      status: "queued",
+      status: isDirectDispatchMode() ? "pending" : "queued",
     });
+
+    if (isDirectDispatchMode()) {
+      try {
+        const { history: deliveredHistory, delivery } = await deliverMessageImmediately({
+          history,
+          to: recipient.normalizedPhoneNumber,
+          message: messageText || undefined,
+        });
+
+        sentCount += 1;
+        results.push({
+          rowNumber: recipient.rowNumber,
+          recipientName: recipient.name,
+          phoneNumber: recipient.normalizedPhoneNumber,
+          status: deliveredHistory.status,
+          historyId: deliveredHistory._id,
+          messageId: delivery.messageId,
+        });
+      } catch (error) {
+        failedCount += 1;
+        results.push({
+          rowNumber: recipient.rowNumber,
+          recipientName: recipient.name,
+          phoneNumber: recipient.normalizedPhoneNumber,
+          status: "failed",
+          historyId: history._id,
+          error: error.message,
+        });
+      }
+
+      continue;
+    }
 
     const job = await enqueueMessage({
       historyId: history._id.toString(),
@@ -94,14 +184,18 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
 
   res.status(202).json({
     success: true,
-    message: `${results.length} messages queued for delivery. Check sent history for status updates.`,
+    message: isDirectDispatchMode()
+      ? `${sentCount} messages sent and ${failedCount} failed during this upload.`
+      : `${results.length} messages queued for delivery. Check sent history for status updates.`,
     data: {
       batchId,
       totalRows: parsedFile.totalRows,
       validRecipients: parsedFile.recipients.length,
       invalidRows: parsedFile.invalidRows,
       duplicateRows: parsedFile.duplicateRows,
-      queuedCount: results.length,
+      queuedCount: isDirectDispatchMode() ? 0 : results.length,
+      sentCount,
+      failedCount,
       resultsPreview: results.slice(0, 50),
     },
   });

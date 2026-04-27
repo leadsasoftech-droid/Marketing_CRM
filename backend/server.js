@@ -9,7 +9,7 @@ async function startServer() {
     await initializeRuntime();
 
     // Start the BullMQ WhatsApp worker so queued messages get processed
-    const worker = startWhatsappWorker();
+    const worker = env.messageDispatchMode === "queue" ? startWhatsappWorker() : null;
 
     const server = app.listen(env.port, () => {
       console.log(`CRM backend running on port ${env.port} in ${env.nodeEnv} mode.`);
@@ -18,8 +18,10 @@ async function startServer() {
     const shutdown = async (signal) => {
       console.log(`${signal} received. Closing CRM backend gracefully...`);
       // Close the worker first to finish in-flight jobs
-      await worker.close();
-      console.log("[WhatsApp Worker] Stopped.");
+      if (worker) {
+        await worker.close();
+        console.log("[WhatsApp Worker] Stopped.");
+      }
       server.close(async () => {
         await mongoose.connection.close();
         process.exit(0);

@@ -1,10 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useDeferredValue, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { messageApi } from "../services/api";
 import { toast } from "react-hot-toast";
 import { motion as Motion, AnimatePresence } from "framer-motion";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, useCallback } from "react";
 
 function formatDateParts(value) {
     if (!value) {
@@ -39,11 +39,38 @@ function getStatusStyles(status) {
     }
 
     if (status === "queued") {
-        return "text-[#b45309]";
+        return "bg-amber-100 text-amber-700";
     }
 
     return "bg-primary/10 text-primary";
 }
+
+function buildPaginationItems(currentPage, totalPages) {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const items = [1];
+    const windowStart = Math.max(2, currentPage - 1);
+    const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+
+    if (windowStart > 2) {
+        items.push("left-ellipsis");
+    }
+
+    for (let page = windowStart; page <= windowEnd; page += 1) {
+        items.push(page);
+    }
+
+    if (windowEnd < totalPages - 1) {
+        items.push("right-ellipsis");
+    }
+
+    items.push(totalPages);
+    return items;
+}
+
+const pageSizeOptions = [10, 20, 50];
 
 export default function SentHistoryPage() {
     const { token } = useAuth();
@@ -52,17 +79,21 @@ export default function SentHistoryPage() {
     const deferredSearch = useDeferredValue(search);
 
     const [history, setHistory] = useState([]);
-    const [totalRecords, setTotalRecords] = useState(0);
-    const [nextCursor, setNextCursor] = useState(null);
     const [queuedTotal, setQueuedTotal] = useState(0);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 1,
+    });
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [pageJumpInput, setPageJumpInput] = useState("1");
 
     const [isLoading, setIsLoading] = useState(true);
-    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [isClearingQueued, setIsClearingQueued] = useState(false);
     const [isClearQueuedModalOpen, setIsClearQueuedModalOpen] = useState(false);
-    const hasNextPage = nextCursor !== null;
-
-    const parentRef = useRef(null);
 
     const refreshQueuedTotal = useCallback(async () => {
         if (!token) return;
@@ -75,75 +106,69 @@ export default function SentHistoryPage() {
         }
     }, [token]);
 
-    const fetchHistory = useCallback(async (cursor = null, isRefresh = false) => {
+    const fetchHistory = useCallback(async () => {
         if (!token) return;
 
         try {
-            if (isRefresh) setIsLoading(true);
-            else setIsFetchingNextPage(true);
+            setIsLoading(true);
 
             const payload = await messageApi.getHistory({
-                limit: 15,
+                page: currentPage,
+                limit: pageSize,
                 status,
                 search: deferredSearch.trim(),
-                cursor
             }, token);
 
-            setHistory(prev => isRefresh ? payload.data.history : [...prev, ...payload.data.history]);
-            setNextCursor(payload.data.pagination.nextCursor);
-            setTotalRecords(payload.data.pagination.total);
+            const nextPagination = payload.data.pagination;
+            setHistory(payload.data.history);
+            setPagination(nextPagination);
+            setPageJumpInput(String(nextPagination.page));
 
+            if (nextPagination.total > 0 && currentPage > nextPagination.totalPages) {
+                setCurrentPage(nextPagination.totalPages);
+            }
         } catch (error) {
             toast.error(error.message || "Unable to load message history.");
-            if (isRefresh) setHistory([]);
+            setHistory([]);
         } finally {
             setIsLoading(false);
-            setIsFetchingNextPage(false);
         }
-    }, [deferredSearch, status, token]);
+    }, [currentPage, deferredSearch, pageSize, status, token]);
 
     useEffect(() => {
-        fetchHistory(null, true);
+        fetchHistory();
     }, [fetchHistory]);
 
     useEffect(() => {
         refreshQueuedTotal();
     }, [refreshQueuedTotal]);
 
-    // eslint-disable-next-line react-hooks/incompatible-library
-    const rowVirtualizer = useVirtualizer({
-        count: hasNextPage ? history.length + 1 : history.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 85,
-        overscan: 5,
-    });
-
-    const virtualItems = rowVirtualizer.getVirtualItems();
-
-    useEffect(() => {
-        const [lastItem] = [...virtualItems].reverse();
-        if (!lastItem) return;
-
-        if (
-            lastItem.index >= history.length - 1 &&
-            hasNextPage &&
-            !isFetchingNextPage &&
-            !isLoading
-        ) {
-            fetchHistory(nextCursor, false);
-        }
-    }, [
-        hasNextPage,
-        fetchHistory,
-        history.length,
-        isFetchingNextPage,
-        virtualItems,
-        nextCursor,
-        isLoading
-    ]);
-
+    const totalRecords = pagination.total;
+    const totalPages = Math.max(pagination.totalPages || 1, 1);
     const sentCount = history.filter((item) => item.status === "sent").length;
     const failedCount = history.filter((item) => item.status === "failed").length;
+    const pageRecordStart = history.length === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+    const pageRecordEnd = history.length === 0 ? 0 : pageRecordStart + history.length - 1;
+    const paginationItems = buildPaginationItems(pagination.page, totalPages);
+
+    const handlePageChange = (page) => {
+        const nextPage = Math.min(Math.max(page, 1), totalPages);
+        setCurrentPage(nextPage);
+        setPageJumpInput(String(nextPage));
+    };
+
+    const handlePageJumpSubmit = (event) => {
+        event.preventDefault();
+
+        const parsedPage = Number.parseInt(pageJumpInput, 10);
+        if (Number.isNaN(parsedPage)) {
+            toast.error("Enter a valid page number.");
+            setPageJumpInput(String(pagination.page));
+            return;
+        }
+
+        handlePageChange(parsedPage);
+    };
 
     const handleClearQueued = () => {
         if (!queuedTotal || isClearingQueued) {
@@ -159,7 +184,7 @@ export default function SentHistoryPage() {
             const payload = await messageApi.clearQueued(token);
             toast.success(payload.message || "Queued messages cleared.");
             await Promise.all([
-                fetchHistory(null, true),
+                fetchHistory(),
                 refreshQueuedTotal(),
             ]);
             setIsClearQueuedModalOpen(false);
@@ -195,6 +220,8 @@ export default function SentHistoryPage() {
                             value={search}
                             onChange={(event) => {
                                 setSearch(event.target.value);
+                                setCurrentPage(1);
+                                setPageJumpInput("1");
                             }}
                             placeholder="Search recipient, phone, or message"
                             className="pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-w-[260px]"
@@ -205,6 +232,8 @@ export default function SentHistoryPage() {
                             value={status}
                             onChange={(event) => {
                                 setStatus(event.target.value);
+                                setCurrentPage(1);
+                                setPageJumpInput("1");
                             }}
                             className="appearance-none pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
@@ -245,7 +274,7 @@ export default function SentHistoryPage() {
                     </div>
                     <div className="flex items-center text-on-surface-variant text-sm">
                         <span className="material-symbols-outlined text-sm mr-1">stacked_bar_chart</span>
-                        <span>Across all pages</span>
+                        <span>{pageRecordStart > 0 ? `Showing ${pageRecordStart}-${pageRecordEnd}` : "No records on this page"}</span>
                     </div>
                 </div>
 
@@ -263,7 +292,7 @@ export default function SentHistoryPage() {
                     </div>
                     <div className="flex items-center text-on-surface-variant text-sm">
                         <span className="material-symbols-outlined text-sm mr-1">page_info</span>
-                        <span>Fetched so far</span>
+                        <span>Page {pagination.page} of {totalPages}</span>
                     </div>
                 </div>
 
@@ -286,126 +315,201 @@ export default function SentHistoryPage() {
                 </div>
             </div>
 
-            <div className="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="grid grid-cols-[1.5fr_2fr_1.5fr_1fr_1fr_1fr] bg-surface-container-low border-b border-surface-variant z-10">
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Recipient</div>
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Message Preview</div>
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Sent By</div>
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Date & Time</div>
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Source</div>
-                    <div className="py-4 px-6 text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Status</div>
+            <div className="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.05)] overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm text-on-surface">
+                        <thead className="bg-surface-container-low border-b border-surface-variant">
+                            <tr>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Recipient</th>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Message Preview</th>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Sent By</th>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Date & Time</th>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Source</th>
+                                <th className="py-4 px-6 text-left text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                Array.from({ length: pageSize }, (_, index) => (
+                                    <tr key={index} className="border-b border-surface-variant animate-pulse">
+                                        <td className="px-6 py-5">
+                                            <div className="h-4 w-24 rounded bg-surface-variant" />
+                                            <div className="mt-2 h-3 w-20 rounded bg-surface-variant/50" />
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="h-4 w-40 rounded bg-surface-variant" />
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="h-8 w-32 rounded-full bg-surface-variant/60" />
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="h-4 w-24 rounded bg-surface-variant" />
+                                            <div className="mt-2 h-3 w-16 rounded bg-surface-variant/50" />
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="h-8 w-24 rounded-full bg-surface-variant/60" />
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="h-8 w-20 rounded-full bg-surface-variant/60" />
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : history.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-16 text-center text-on-surface-variant">
+                                        No messages matched the current filters.
+                                    </td>
+                                </tr>
+                            ) : (
+                                history.map((entry) => {
+                                    const { date, time } = formatDateParts(entry.sentAt || entry.createdAt);
+
+                                    return (
+                                        <tr key={entry._id} className="border-b border-surface-variant hover:bg-surface-container-low/50 transition-colors">
+                                            <td className="px-6 py-5 align-top">
+                                                <p className="font-medium">{entry.phoneNumber}</p>
+                                                <p className="text-xs text-on-surface-variant mt-1">
+                                                    {entry.recipientName || "Unnamed recipient"}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-5 align-top text-on-surface-variant">
+                                                <p className="line-clamp-2">{entry.message}</p>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                {entry.owner?.role === "super_admin" ? (
+                                                    <span className="inline-flex items-center gap-1 text-primary uppercase tracking-wider font-semibold text-[11px] bg-primary/10 px-2 py-1 rounded-full">
+                                                        <span className="material-symbols-outlined text-[14px]">shield</span>
+                                                        Super Admin
+                                                    </span>
+                                                ) : (
+                                                    <div className="min-w-[160px]">
+                                                        <p className="font-medium text-[13px] truncate" title={entry.owner?.name}>
+                                                            {entry.owner?.name || "Unknown User"}
+                                                        </p>
+                                                        <p className="text-[11px] text-on-surface-variant truncate mt-1" title={entry.owner?.email}>
+                                                            {entry.owner?.email || "No email"}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5 align-top whitespace-nowrap">
+                                                <p>{date}</p>
+                                                <p className="text-xs text-on-surface-variant mt-1">{time}</p>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface text-xs capitalize">
+                                                    <span className="material-symbols-outlined text-[14px]">
+                                                        {entry.source === "bulk" ? "outbox" : "send"}
+                                                    </span>
+                                                    {entry.source}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5 align-top">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusStyles(entry.status)}`}>
+                                                    {entry.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
 
-                {/* Virtual Body */}
-                <div ref={parentRef} className="h-[600px] overflow-auto">
-                    {isLoading ? (
-                        <div className="flex flex-col">
-                            {[1, 2, 3, 4, 5, 6].map(i => (
-                                <div key={i} className="grid grid-cols-[1.5fr_2fr_1.5fr_1fr_1fr_1fr] border-b border-surface-variant animate-pulse px-6 py-4 items-center gap-4">
-                                    <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-3/4"></div><div className="h-3 bg-surface-variant/50 rounded w-1/2"></div></div>
-                                    <div className="h-4 bg-surface-variant rounded w-full"></div>
-                                    <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-1/2"></div><div className="h-3 bg-surface-variant/50 rounded w-1/3"></div></div>
-                                    <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-1/2"></div><div className="h-3 bg-surface-variant/50 rounded w-1/3"></div></div>
-                                    <div className="h-6 w-16 bg-surface-variant rounded-full"></div>
-                                    <div className="h-6 w-20 bg-surface-variant rounded-full"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : history.length === 0 ? (
-                        <div className="py-12 px-6 text-center text-on-surface-variant">
-                            No messages matched the current filters yet.
-                        </div>
-                    ) : (
-                        <div
-                            className="relative w-full text-sm text-on-surface"
-                            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-                        >
-                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                const isLoaderRow = virtualRow.index > history.length - 1;
-                                const entry = history[virtualRow.index];
-
-                                if (isLoaderRow) {
-                                    return (
-                                        <div
-                                            key={virtualRow.index}
-                                            style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: `${virtualRow.size}px`,
-                                                transform: `translateY(${virtualRow.start}px)`
-                                            }}
-                                            className="grid grid-cols-[1.5fr_2fr_1.5fr_1fr_1fr_1fr] px-6 border-b border-surface-variant items-center bg-surface-container-low/20 animate-pulse gap-4"
-                                        >
-                                            <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-3/4"></div><div className="h-3 bg-surface-variant/50 rounded w-1/2"></div></div>
-                                            <div className="h-4 bg-surface-variant rounded w-full"></div>
-                                            <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-1/2"></div><div className="h-3 bg-surface-variant/50 rounded w-1/3"></div></div>
-                                            <div className="flex flex-col gap-2"><div className="h-4 bg-surface-variant rounded w-1/2"></div><div className="h-3 bg-surface-variant/50 rounded w-1/3"></div></div>
-                                            <div className="h-6 w-16 bg-surface-variant rounded-full"></div>
-                                            <div className="h-6 w-20 bg-surface-variant rounded-full"></div>
-                                        </div>
-                                    );
-                                }
-
-                                const { date, time } = formatDateParts(entry.sentAt || entry.createdAt);
-
-                                return (
-                                    <div
-                                        key={entry._id}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: `${virtualRow.size}px`,
-                                            transform: `translateY(${virtualRow.start}px)`
+                <div className="border-t border-surface-variant bg-surface px-4 py-4 sm:px-6">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="text-sm text-on-surface-variant">
+                                {pageRecordStart > 0
+                                    ? `Showing ${pageRecordStart}-${pageRecordEnd} of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`
+                                    : `Showing 0 of ${totalRecords} records • Page ${pagination.page} of ${totalPages}`}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="text-on-surface-variant">Rows per page</span>
+                                <div className="relative">
+                                    <select
+                                        value={pageSize}
+                                        onChange={(event) => {
+                                            setPageSize(Number(event.target.value));
+                                            setCurrentPage(1);
+                                            setPageJumpInput("1");
                                         }}
-                                        className="grid grid-cols-[1.5fr_2fr_1.5fr_1fr_1fr_1fr] border-b border-surface-variant items-center hover:bg-surface-container-low/50 transition-colors"
+                                        className="appearance-none rounded-lg border border-outline-variant bg-surface-container-lowest py-2 pl-3 pr-9 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
                                     >
-                                        <div className="px-6">
-                                            <p className="font-medium">{entry.phoneNumber}</p>
-                                            <p className="text-xs text-on-surface-variant">
-                                                {entry.recipientName || "Unnamed recipient"}
-                                            </p>
-                                        </div>
-                                        <div className="px-6 line-clamp-2 text-on-surface-variant">{entry.message}</div>
-                                        <div className="px-6 flex flex-col justify-center overflow-hidden">
-                                            {entry.owner?.role === "super_admin" ? (
-                                                <span className="inline-flex items-center gap-1 text-primary uppercase tracking-wider font-semibold text-[11px] bg-primary/10 px-2 py-0.5 rounded-full w-fit">
-                                                    <span className="material-symbols-outlined text-[14px]">shield</span>
-                                                    Super Admin
-                                                </span>
-                                            ) : (
-                                                <>
-                                                    <p className="font-medium text-[13px] truncate" title={entry.owner?.name}>{entry.owner?.name || "Unknown User"}</p>
-                                                    <p className="text-[11px] text-on-surface-variant truncate" title={entry.owner?.email}>{entry.owner?.email || "No email"}</p>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="px-6 whitespace-nowrap">
-                                            <p>{date}</p>
-                                            <p className="text-xs text-on-surface-variant">{time}</p>
-                                        </div>
-                                        <div className="px-6">
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface text-xs capitalize">
-                                                <span className="material-symbols-outlined text-[14px]">
-                                                    {entry.source === "bulk" ? "outbox" : "send"}
-                                                </span>
-                                                {entry.source}
-                                            </span>
-                                        </div>
-                                        <div className="px-6">
-                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusStyles(entry.status)}`}>
-                                                {entry.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        {pageSizeOptions.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-[18px]">
+                                        expand_more
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    )}
+
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handlePageChange(pagination.page - 1)}
+                                    disabled={pagination.page <= 1 || isLoading}
+                                    className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                {paginationItems.map((item) => (
+                                    typeof item === "number" ? (
+                                        <button
+                                            key={item}
+                                            type="button"
+                                            onClick={() => handlePageChange(item)}
+                                            disabled={isLoading}
+                                            className={`min-w-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${item === pagination.page
+                                                ? "bg-primary text-on-primary"
+                                                : "border border-outline-variant text-on-surface hover:bg-surface-container-low"
+                                                } disabled:cursor-not-allowed disabled:opacity-50`}
+                                        >
+                                            {item}
+                                        </button>
+                                    ) : (
+                                        <span key={item} className="px-1 text-on-surface-variant">
+                                            ...
+                                        </span>
+                                    )
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => handlePageChange(pagination.page + 1)}
+                                    disabled={pagination.page >= totalPages || isLoading}
+                                    className="rounded-lg border border-outline-variant px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+
+                            <form onSubmit={handlePageJumpSubmit} className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm text-on-surface-variant">Jump to page</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max={totalPages}
+                                    value={pageJumpInput}
+                                    onChange={(event) => setPageJumpInput(event.target.value)}
+                                    className="w-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-on-secondary transition-colors hover:bg-on-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Go
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 

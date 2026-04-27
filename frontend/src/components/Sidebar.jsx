@@ -38,19 +38,9 @@ export default function Sidebar({ isOpen, onClose }) {
             >
                 {/* Brand */}
                 <div className="p-6 border-b border-slate-800/50">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="flex flex-col items-center justify-center gap-3 text-center flex-1">
-                            <img src="/siksapath.png" alt="Siksapath Logo" className="w-48 h-auto object-contain" />
-                            <p className="text-slate-400 text-xs font-semibold">WhatsApp Marketing Dashboard</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="h-10 w-10 rounded-lg border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center"
-                            aria-label="Hide navigation"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">menu_open</span>
-                        </button>
+                    <div className="flex flex-col items-center justify-center gap-3 text-center">
+                        <img src="/siksapath.png" alt="Siksapath Logo" className="w-48 h-auto object-contain" />
+                        <p className="text-slate-400 text-xs font-semibold">WhatsApp Marketing Dashboard</p>
                     </div>
                 </div>
 

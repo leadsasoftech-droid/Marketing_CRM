@@ -2,8 +2,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { messageApi } from "../services/api";
 import { toast } from "react-hot-toast";
-// eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef, useCallback } from "react";
 
@@ -60,6 +59,7 @@ export default function SentHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     const [isClearingQueued, setIsClearingQueued] = useState(false);
+    const [isClearQueuedModalOpen, setIsClearQueuedModalOpen] = useState(false);
     const hasNextPage = nextCursor !== null;
 
     const parentRef = useRef(null);
@@ -145,19 +145,15 @@ export default function SentHistoryPage() {
     const sentCount = history.filter((item) => item.status === "sent").length;
     const failedCount = history.filter((item) => item.status === "failed").length;
 
-    const handleClearQueued = async () => {
+    const handleClearQueued = () => {
         if (!queuedTotal || isClearingQueued) {
             return;
         }
 
-        const shouldClear = window.confirm(
-            `Clear ${queuedTotal} queued message${queuedTotal === 1 ? "" : "s"}? They will be marked as failed before delivery.`,
-        );
+        setIsClearQueuedModalOpen(true);
+    };
 
-        if (!shouldClear) {
-            return;
-        }
-
+    const confirmClearQueued = async () => {
         try {
             setIsClearingQueued(true);
             const payload = await messageApi.clearQueued(token);
@@ -166,6 +162,7 @@ export default function SentHistoryPage() {
                 fetchHistory(null, true),
                 refreshQueuedTotal(),
             ]);
+            setIsClearQueuedModalOpen(false);
         } catch (error) {
             toast.error(error.message || "Unable to clear queued messages.");
         } finally {
@@ -174,7 +171,7 @@ export default function SentHistoryPage() {
     };
 
     return (
-        <motion.div
+        <Motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -412,7 +409,70 @@ export default function SentHistoryPage() {
                 </div>
             </div>
 
+            <AnimatePresence>
+                {isClearQueuedModalOpen && (
+                    <Motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 p-4"
+                        onClick={() => {
+                            if (!isClearingQueued) {
+                                setIsClearQueuedModalOpen(false);
+                            }
+                        }}
+                    >
+                        <Motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+                            transition={{ duration: 0.18 }}
+                            onClick={(event) => event.stopPropagation()}
+                            className="w-full max-w-md overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-2xl"
+                        >
+                            <div className="border-b border-outline-variant px-6 py-5">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-error-container/70 text-error">
+                                        <span className="material-symbols-outlined text-[24px]">playlist_remove</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-on-surface leading-7">Clear queued messages?</h3>
+                                        <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+                                            {queuedTotal} queued message{queuedTotal === 1 ? "" : "s"} will be removed from the queue and marked as failed before delivery.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-        </motion.div>
+                            <div className="px-6 py-5">
+                                <div className="rounded-lg border border-outline-variant bg-surface px-4 py-3 text-sm text-on-surface-variant">
+                                    Active jobs that are already being processed may be skipped and will remain in history until they finish.
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 border-t border-outline-variant bg-surface px-6 py-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsClearQueuedModalOpen(false)}
+                                    disabled={isClearingQueued}
+                                    className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmClearQueued}
+                                    disabled={isClearingQueued}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-error px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+                                    {isClearingQueued ? "Clearing..." : "Clear queue"}
+                                </button>
+                            </div>
+                        </Motion.div>
+                    </Motion.div>
+                )}
+            </AnimatePresence>
+        </Motion.div>
     );
 }

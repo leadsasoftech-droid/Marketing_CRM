@@ -51,8 +51,16 @@ function applyAcceptedDeliveryToHistory({ history, delivery, message }) {
   // Provider accepted the message — mark as "sent" immediately.
   // If delivery later fails, the webhook callback will update
   // the status to "failed" via applyWebhookStatusToHistory.
-  history.status = "sent";
-  history.sentAt = new Date();
+  if (delivery.mode === "mock" || !shouldAwaitProviderConfirmation(delivery)) {
+    history.status = "sent";
+    history.sentAt = new Date();
+    return;
+  }
+
+  // Live mode with webhook configured — set "pending" until the
+  // webhook confirms the actual delivery outcome (sent/failed).
+  history.status = "pending";
+  history.sentAt = null;
 }
 
 function parseWebhookTimestamp(status) {

@@ -79,16 +79,19 @@ function buildDirectBulkResponseMessage({ sentCount, pendingCount, failedCount }
   return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)} during this upload.`;
 }
 
-async function deliverMessageImmediately({ history, to, message }) {
+async function deliverMessageImmediately({ history, to, message, skipProviderSync = false }) {
   try {
     const delivery = await sendTextMessage({ to, message });
 
     applyAcceptedDeliveryToHistory({ history, delivery, message });
     await history.save();
-    try {
-      await waitForProviderStatusSync(history);
-    } catch (syncError) {
-      console.warn(`Provider status sync skipped for ${history._id}: ${syncError.message}`);
+
+    if (!skipProviderSync) {
+      try {
+        await waitForProviderStatusSync(history);
+      } catch (syncError) {
+        console.warn(`Provider status sync skipped for ${history._id}: ${syncError.message}`);
+      }
     }
 
     return {
@@ -277,6 +280,115 @@ const sendBulkMessages = asyncHandler(async (req, res) => {
       sentCount,
       failedCount,
       resultsPreview: results.slice(0, 50),
+    },
+  });
+});
+
+// -------------------------------------------------------------------------
+// Parse a bulk file without sending — returns the recipient list and a
+// batchId so the frontend can drive the sequential send flow.
+// -------------------------------------------------------------------------
+const parseBulkFile = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, "A CSV or Excel file is required.");
+  }
+
+  const parsedFile = await parseContactsFile(req.file);
+
+  if (parsedFile.recipients.length === 0) {
+    throw new ApiError(400, "No valid phone numbers were found in the uploaded file.");
+  }
+
+  const batchId = new mongoose.Types.ObjectId().toString();
+
+  res.status(200).json({
+    success: true,
+    message: `${parsedFile.recipients.length} valid recipients found.`,
+    data: {
+      batchId,
+      totalRows: parsedFile.totalRows,
+      validRecipients: parsedFile.recipients.length,
+      invalidRows: parsedFile.invalidRows,
+      duplicateRows: parsedFile.duplicateRows,
+      recipients: parsedFile.recipients,
+    },
+  });
+});
+
+// -------------------------------------------------------------------------
+// Send a single WhatsApp message as part of a bulk batch.
+// Creates a history record with the supplied batchId so it is grouped
+// with the rest of the batch, then delivers immediately.
+// -------------------------------------------------------------------------
+const sendBulkSingle = asyncHandler(async (req, res) => {
+  const { phoneNumber, name, message, batchId } = req.body;
+
+  if (!batchId) {
+    throw new ApiError(400, "batchId is required for bulk-single sends.");
+  }
+
+  const messageText = message || "";
+
+  const history = await MessageHistory.create({
+    owner: req.user._id,
+    batchId,
+    recipientName: name || "",
+    phoneNumber,
+    message: messageText || "[Template message]",
+    source: "bulk",
+    status: "queued",
+  });
+
+  if (isDirectDispatchMode()) {
+    try {
+      const result = await deliverMessageImmediately({
+        history,
+        to: phoneNumber,
+        message: messageText || undefined,
+        skipProviderSync: true,
+      });
+
+      res.status(200).json({
+        success: true,
+        message:
+          result.history.status === "sent"
+            ? "Message sent successfully."
+            : getDeliverySuccessMessage(result.delivery),
+        data: {
+          historyId: result.history._id,
+          status: result.history.status,
+          messageId: result.delivery.messageId,
+        },
+      });
+      return;
+    } catch (error) {
+      res.status(200).json({
+        success: false,
+        message: error.message || "Message delivery failed.",
+        data: {
+          historyId: history._id,
+          status: "failed",
+          error: error.message,
+        },
+      });
+      return;
+    }
+  }
+
+  // Queue mode fallback
+  const job = await enqueueMessage({
+    historyId: history._id.toString(),
+    to: phoneNumber,
+    message: messageText || undefined,
+  });
+
+  res.status(202).json({
+    success: true,
+    message: "Message queued for delivery.",
+    data: {
+      historyId: history._id,
+      status: "queued",
+      jobId: job.id,
     },
   });
 });
@@ -521,6 +633,8 @@ module.exports = {
   clearQueuedMessages,
   getMessageHistory,
   getMessageHistoryById,
+  parseBulkFile,
+  sendBulkSingle,
   verifyDeliveryWebhook,
   sendBulkMessages,
   sendSingleMessage,

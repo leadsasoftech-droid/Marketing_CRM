@@ -5,6 +5,8 @@ Full-stack CRM for WhatsApp outreach — React frontend with Express/MongoDB bac
 ## Quick Start
 
 ```bash
+nvm use || nvm install
+
 # Backend
 cd backend
 cp .env.example .env        # Configure your environment
@@ -16,6 +18,12 @@ cd frontend
 npm install
 npm run dev                  # Starts on http://localhost:5173
 ```
+
+## Runtime Requirement
+
+- The repo is pinned to Node.js `24.11.1` via [`.nvmrc`](.nvmrc).
+- The current frontend/backend toolchain requires at least Node `20.19.0` on the Node 20 line, or Node `22.12.0+` on newer lines.
+- Run `nvm use` from the repo root before starting either app when `nvm` is installed.
 
 ## Tech Stack
 

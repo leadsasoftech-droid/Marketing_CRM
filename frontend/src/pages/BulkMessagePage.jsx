@@ -1,85 +1,15 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { messageApi } from "../services/api";
 import { toast } from "react-hot-toast";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import * as XLSX from "xlsx";
+import BulkSendProgressModal from "../components/BulkSendProgressModal";
+import VirtualizedPreviewTable from "../components/VirtualizedPreviewTable";
 
 function normalizeDisplayStatus(status) {
     return status === "pending" ? "processing" : status;
-}
-
-function getQueuedCount(result) {
-    if (!result) {
-        return 0;
-    }
-
-    if (typeof result.queuedCount === "number") {
-        return result.queuedCount;
-    }
-
-    return Array.isArray(result.resultsPreview)
-        ? result.resultsPreview.filter((entry) => entry.status === "queued").length
-        : 0;
-}
-
-function getSentCount(result) {
-    if (!result) {
-        return 0;
-    }
-
-    if (typeof result.sentCount === "number") {
-        return Number(result.sentCount || 0);
-    }
-
-    return Array.isArray(result.resultsPreview)
-        ? result.resultsPreview.filter((entry) => normalizeDisplayStatus(entry.status) === "sent").length
-        : 0;
-}
-
-function getProcessingCount(result) {
-    if (!result) {
-        return 0;
-    }
-
-    if (typeof result.pendingCount === "number") {
-        return Number(result.pendingCount || 0);
-    }
-
-    return Array.isArray(result.resultsPreview)
-        ? result.resultsPreview.filter((entry) => normalizeDisplayStatus(entry.status) === "processing").length
-        : 0;
-}
-
-function getPrimaryMetric(result) {
-    if (!result) {
-        return {
-            label: "Queued",
-            value: 0,
-        };
-    }
-
-    const processingCount = getProcessingCount(result);
-    if (processingCount > 0) {
-        return {
-            label: "Processing",
-            value: processingCount,
-        };
-    }
-
-    const queuedCount = getQueuedCount(result);
-    if (queuedCount > 0) {
-        return {
-            label: "Queued",
-            value: queuedCount,
-        };
-    }
-
-    return {
-        label: "Sent",
-        value: getSentCount(result),
-    };
 }
 
 export default function BulkMessagePage() {
@@ -88,8 +18,26 @@ export default function BulkMessagePage() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const submittingRef = useRef(false);
+    const cancelRef = useRef(false);
+
+    // Progress modal state
+    const [showModal, setShowModal] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
+    const [sentCount, setSentCount] = useState(0);
+    const [failedCount, setFailedCount] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentRecipient, setCurrentRecipient] = useState(null);
+    const [activityLog, setActivityLog] = useState([]);
+    const [isComplete, setIsComplete] = useState(false);
+    const [isCancelled, setIsCancelled] = useState(false);
+
+    // Result state for the summary table after completion
     const [result, setResult] = useState(null);
-    const primaryMetric = getPrimaryMetric(result);
+
+    // File preview state — parsed client-side for instant display
+    const [previewRows, setPreviewRows] = useState([]);
+    const [previewColumns, setPreviewColumns] = useState([]);
+    const [isParsing, setIsParsing] = useState(false);
 
     const sampleData = [
         { Name: "Rahul Sharma", Phone: "9876543210", "Country Code": "91" },
@@ -126,11 +74,82 @@ export default function BulkMessagePage() {
         toast.success("Sample Excel downloaded!");
     };
 
+    const parseFileLocally = useCallback(async (file) => {
+        if (!file) {
+            setPreviewRows([]);
+            setPreviewColumns([]);
+            return;
+        }
+
+        setIsParsing(true);
+        try {
+            const buffer = await file.arrayBuffer();
+            const ext = file.name.split(".").pop().toLowerCase();
+            let rows = [];
+
+            if (ext === "csv") {
+                const text = new TextDecoder().decode(buffer);
+                const lines = text.split(/\r?\n/).filter((l) => l.trim());
+                if (lines.length > 0) {
+                    const headers = lines[0].split(",").map((h) => h.trim());
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(",");
+                        const row = {};
+                        headers.forEach((h, idx) => {
+                            row[h] = (values[idx] || "").trim();
+                        });
+                        rows.push(row);
+                    }
+                }
+            } else {
+                const workbook = XLSX.read(buffer, { type: "array" });
+                const firstSheet = workbook.SheetNames[0];
+                if (firstSheet) {
+                    rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
+                }
+            }
+
+            if (rows.length > 0) {
+                const cols = Object.keys(rows[0]);
+                setPreviewColumns(cols);
+                setPreviewRows(rows);
+            } else {
+                setPreviewColumns([]);
+                setPreviewRows([]);
+            }
+        } catch {
+            setPreviewColumns([]);
+            setPreviewRows([]);
+        } finally {
+            setIsParsing(false);
+        }
+    }, []);
+
     const handleFileSelect = (event) => {
         const file = event.target.files?.[0] || null;
         setSelectedFile(file);
         setResult(null);
+        parseFileLocally(file);
     };
+
+    const resetModalState = useCallback(() => {
+        setSentCount(0);
+        setFailedCount(0);
+        setCurrentIndex(0);
+        setCurrentRecipient(null);
+        setActivityLog([]);
+        setIsComplete(false);
+        setIsCancelled(false);
+        cancelRef.current = false;
+    }, []);
+
+    const handleCancel = useCallback(() => {
+        cancelRef.current = true;
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        setShowModal(false);
+    }, []);
 
     const handleSubmit = async () => {
         if (!selectedFile) {
@@ -138,21 +157,137 @@ export default function BulkMessagePage() {
             return;
         }
 
-        // Synchronous ref guard — prevents duplicate bulk sends.
+        // Prevent duplicate sends
         if (submittingRef.current) return;
         submittingRef.current = true;
         setIsSubmitting(true);
         setResult(null);
+        resetModalState();
 
         const formData = new FormData();
         formData.append("file", selectedFile);
 
         try {
-            const payload = await messageApi.sendBulk(formData, token);
-            setResult(payload.data);
-            toast.success(payload.message || "Bulk campaign submitted.");
+            // Step 1: Parse the file to get recipients
+            const parseResponse = await messageApi.parseBulk(formData, token);
+            const { batchId, recipients, invalidRows, duplicateRows, totalRows } = parseResponse.data;
+
+            if (!recipients || recipients.length === 0) {
+                toast.error("No valid phone numbers found in the uploaded file.");
+                return;
+            }
+
+            // Step 2: Open the progress modal and send messages one by one
+            setTotalCount(recipients.length);
+            setShowModal(true);
+
+            const allResults = [];
+            let finalSentCount = 0;
+            let finalFailedCount = 0;
+
+            for (let i = 0; i < recipients.length; i++) {
+                // Check for cancellation
+                if (cancelRef.current) {
+                    break;
+                }
+
+                const recipient = recipients[i];
+                setCurrentIndex(i);
+                setCurrentRecipient(recipient);
+
+                try {
+                    const sendResponse = await messageApi.sendBulkSingle(
+                        {
+                            phoneNumber: recipient.normalizedPhoneNumber,
+                            name: recipient.name,
+                            batchId,
+                        },
+                        token,
+                    );
+
+                    const status = sendResponse.data?.status || (sendResponse.success ? "sent" : "failed");
+
+                    if (status === "sent" || status === "pending" || status === "queued") {
+                        finalSentCount += 1;
+                        setSentCount((prev) => prev + 1);
+                    } else {
+                        finalFailedCount += 1;
+                        setFailedCount((prev) => prev + 1);
+                    }
+
+                    const logEntry = {
+                        name: recipient.name,
+                        phoneNumber: recipient.normalizedPhoneNumber,
+                        status: status === "pending" ? "processing" : status,
+                        rowNumber: recipient.rowNumber,
+                        historyId: sendResponse.data?.historyId,
+                        messageId: sendResponse.data?.messageId,
+                    };
+
+                    setActivityLog((prev) => [...prev, logEntry]);
+                    allResults.push({
+                        ...logEntry,
+                        recipientName: recipient.name,
+                    });
+                } catch (error) {
+                    finalFailedCount += 1;
+                    setFailedCount((prev) => prev + 1);
+
+                    const logEntry = {
+                        name: recipient.name,
+                        phoneNumber: recipient.normalizedPhoneNumber,
+                        status: "failed",
+                        rowNumber: recipient.rowNumber,
+                        error: error.message,
+                    };
+
+                    setActivityLog((prev) => [...prev, logEntry]);
+                    allResults.push({
+                        ...logEntry,
+                        recipientName: recipient.name,
+                    });
+                }
+
+                // Small delay between messages to respect rate limits
+                // (Fast2SMS limit: 25 per second, so ~50ms per message is safe)
+                if (i < recipients.length - 1 && !cancelRef.current) {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                }
+            }
+
+            // --- All sends finished (or cancelled) ---
+            setCurrentRecipient(null);
+
+            if (cancelRef.current) {
+                setIsCancelled(true);
+                if (finalSentCount > 0 || finalFailedCount > 0) {
+                    toast(`Campaign stopped — ${finalSentCount} sent, ${finalFailedCount} failed.`, { icon: "⚠️" });
+                } else {
+                    toast("Campaign cancelled before any messages were sent.", { icon: "⚠️" });
+                }
+            } else {
+                setIsComplete(true);
+                if (finalFailedCount === 0) {
+                    toast.success(`All ${finalSentCount} messages sent successfully!`);
+                } else {
+                    toast(`${finalSentCount} sent, ${finalFailedCount} failed.`, { icon: "⚠️" });
+                }
+            }
+
+            // Set the result for the summary table
+            setResult({
+                batchId,
+                totalRows,
+                validRecipients: recipients.length,
+                invalidRows: invalidRows || [],
+                duplicateRows: duplicateRows || [],
+                sentCount: finalSentCount,
+                failedCount: finalFailedCount,
+                resultsPreview: allResults,
+            });
         } catch (error) {
-            toast.error(error.message || "Bulk campaign could not be started.");
+            toast.error(error.message || "Could not parse the uploaded file.");
+            setShowModal(false);
         } finally {
             setIsSubmitting(false);
             submittingRef.current = false;
@@ -165,12 +300,26 @@ export default function BulkMessagePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
+            <BulkSendProgressModal
+                isOpen={showModal}
+                onCancel={handleCancel}
+                onClose={handleCloseModal}
+                totalCount={totalCount}
+                sentCount={sentCount}
+                failedCount={failedCount}
+                currentIndex={currentIndex}
+                currentRecipient={currentRecipient}
+                activityLog={activityLog}
+                isComplete={isComplete}
+                isCancelled={isCancelled}
+            />
+
             <div className="mb-8">
                 <h2 className="text-[32px] font-bold text-on-surface leading-[40px]" style={{ letterSpacing: "-0.02em" }}>
                     Bulk Message Campaign
                 </h2>
                 <p className="text-sm text-on-surface-variant mt-2">
-                    Upload your recipient list and send a WhatsApp campaign through the backend API.
+                    Upload your recipient list and send a WhatsApp campaign. Messages are sent one by one to ensure reliable delivery.
                 </p>
             </div>
 
@@ -278,6 +427,21 @@ export default function BulkMessagePage() {
                     </div>
                 </div>
 
+                {/* ---- File Preview (client-side parsed, virtualized) ---- */}
+                {isParsing && (
+                    <div className="lg:col-span-12 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm p-8 flex items-center justify-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        <p className="text-sm text-on-surface-variant">Parsing file…</p>
+                    </div>
+                )}
+
+                {!isParsing && previewRows.length > 0 && (
+                    <div className="lg:col-span-12">
+                        <VirtualizedPreviewTable rows={previewRows} columns={previewColumns} />
+                    </div>
+                )}
+
+                {/* ---- Upload / Send Result ---- */}
                 <div className="lg:col-span-12 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface">
                         <h3 className="text-[20px] font-semibold text-on-surface leading-7">Upload Result</h3>
@@ -294,12 +458,12 @@ export default function BulkMessagePage() {
                                     <p className="text-sm text-on-surface break-all mt-2">{result.batchId}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">{primaryMetric.label}</p>
-                                    <p className="text-2xl font-semibold text-on-surface mt-2">{primaryMetric.value}</p>
+                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Sent</p>
+                                    <p className="text-2xl font-semibold text-on-surface mt-2">{result.sentCount || 0}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Valid Rows</p>
-                                    <p className="text-2xl font-semibold text-on-surface mt-2">{result.validRecipients}</p>
+                                    <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Failed</p>
+                                    <p className="text-2xl font-semibold text-error mt-2">{result.failedCount || 0}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-[0.16em]">Skipped Rows</p>
@@ -327,7 +491,7 @@ export default function BulkMessagePage() {
                                             return (
                                                 <tr key={`${entry.rowNumber}-${entry.phoneNumber}`}>
                                                     <td className="py-4 px-6">{entry.rowNumber}</td>
-                                                    <td className="py-4 px-6">{entry.recipientName || "Unnamed recipient"}</td>
+                                                    <td className="py-4 px-6">{entry.recipientName || entry.name || "Unnamed recipient"}</td>
                                                     <td className="py-4 px-6">{entry.phoneNumber}</td>
                                                     <td className="py-4 px-6">
                                                         <span
@@ -356,7 +520,7 @@ export default function BulkMessagePage() {
                     ) : (
                         <div className="bg-surface p-6 text-center">
                             <p className="text-sm text-on-surface-variant">
-                                Upload a file and launch the campaign to see the backend response here.
+                                Upload a file and launch the campaign to see the results here.
                             </p>
                         </div>
                     )}

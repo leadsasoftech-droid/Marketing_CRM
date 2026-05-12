@@ -130,6 +130,20 @@ export const messageApi = {
       token,
     });
   },
+  parseBulk(formData, token) {
+    return request("/api/messages/bulk/parse", {
+      method: "POST",
+      body: formData,
+      token,
+    });
+  },
+  sendBulkSingle(payload, token) {
+    return request("/api/messages/bulk/send-one", {
+      method: "POST",
+      body: payload,
+      token,
+    });
+  },
   clearQueued(token) {
     return request("/api/messages/queued", {
       method: "DELETE",

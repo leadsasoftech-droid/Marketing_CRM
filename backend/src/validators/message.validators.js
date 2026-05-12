@@ -88,8 +88,39 @@ const messageHistoryByIdValidator = [
     .withMessage("History ID must be a valid MongoDB ObjectId."),
 ];
 
+const bulkSingleMessageValidator = [
+  body("phoneNumber")
+    .trim()
+    .notEmpty()
+    .withMessage("Phone number is required.")
+    .custom((value, { req }) => {
+      const normalized = normalizePhoneNumber(value, req.body.countryCode);
+
+      if (normalized.length < 10 || normalized.length > 15) {
+        throw new Error("Please provide a valid phone number.");
+      }
+
+      return true;
+    }),
+  body("batchId")
+    .trim()
+    .notEmpty()
+    .withMessage("batchId is required."),
+  body("name")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Name must be at most 100 characters."),
+  body("message")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 4096 })
+    .withMessage("Message must be at most 4096 characters."),
+];
+
 module.exports = {
   bulkMessageValidator,
+  bulkSingleMessageValidator,
   messageHistoryByIdValidator,
   messageHistoryQueryValidator,
   sendMessageValidator,

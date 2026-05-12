@@ -4,6 +4,8 @@ const {
   clearQueuedMessages,
   getMessageHistory,
   getMessageHistoryById,
+  parseBulkFile,
+  sendBulkSingle,
   sendBulkMessages,
   sendSingleMessage,
   verifyDeliveryWebhook,
@@ -15,6 +17,7 @@ const { uploadBulkFile } = require("../middlewares/upload.middleware");
 const validateRequest = require("../middlewares/validate.middleware");
 const {
   bulkMessageValidator,
+  bulkSingleMessageValidator,
   messageHistoryByIdValidator,
   messageHistoryQueryValidator,
   sendMessageValidator,
@@ -34,6 +37,19 @@ router.post(
   bulkMessageValidator,
   validateRequest,
   sendBulkMessages,
+);
+router.post(
+  "/bulk/parse",
+  uploadBulkFile.single("file"),
+  bulkMessageValidator,
+  validateRequest,
+  parseBulkFile,
+);
+router.post(
+  "/bulk/send-one",
+  bulkSingleMessageValidator,
+  validateRequest,
+  sendBulkSingle,
 );
 router.delete("/queued", clearQueuedMessages);
 router.get("/history", messageHistoryQueryValidator, validateRequest, getMessageHistory);
